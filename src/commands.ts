@@ -46,6 +46,9 @@ export function registerCommands(
                 return
             }
 
+            // Make sure it's disconnected
+            await disconnectFromServer(server.name)
+
             // Delete the server
             const response = await deleteServer(context, server.name)
 

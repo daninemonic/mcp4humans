@@ -365,7 +365,7 @@ export class ServerDetailWebview {
             <div class="section">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h2 class="section-title">Server Configuration</h2>
-                    <button id="edit-server-btn">Edit</button>
+                    <button id="edit-server-btn" ${this._isConnected ? 'disabled' : ''} title="${this._isConnected ? 'Disconnect server to edit' : 'Edit server configuration'}">Edit</button>
                 </div>
                 <div class="property">
                     <span class="property-name">Transport Type:</span> ${this._server.transportType}

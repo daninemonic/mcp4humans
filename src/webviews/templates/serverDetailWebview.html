@@ -71,6 +71,11 @@
             background-color: var(--vscode-button-hoverBackground);
         }
 
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .section {
             margin-bottom: 20px;
             padding: 15px;
@@ -213,9 +218,7 @@
             align-items: center;
         }
 
-        .result-status-icon {}
-
-        .result-status-text {}
+        /* Status icon and text styles are defined in their specific classes */
 
         .result-status-text.success {
             font-weight: bold;
