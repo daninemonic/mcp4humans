@@ -396,7 +396,7 @@ export class ServerDetailWebview {
                 <div class="tool-card">
                     <h3 class="tool-name">${tool.name}</h3>
                     <p class="tool-description">${tool.description}</p>
-                    <button class="execute-tool-button" data-tool-name="${tool.name}">Execute Tool</button>
+                    <button class="execute-tool-button" data-tool-name="${tool.name}">Send</button>
                 </div>
             `
             })
