@@ -83,6 +83,17 @@ export interface ServerConfig {
 }
 
 /**
+ * Tool parameter types
+ */
+export enum ToolParameterType {
+    STRING = 'string',
+    NUMBER = 'number',
+    BOOLEAN = 'boolean',
+    OBJECT = 'object',
+    ARRAY = 'array',
+}
+
+/**
  * Parameter for an MCP tool
  */
 export interface ToolParameter {
@@ -94,7 +105,7 @@ export interface ToolParameter {
     /**
      * Data type of the parameter
      */
-    type: string
+    type: ToolParameterType
 
     /**
      * Whether the parameter is required
@@ -105,6 +116,11 @@ export interface ToolParameter {
      * Description of the parameter
      */
     description: string
+
+    /**
+     * Default value for the parameter
+     */
+    default?: any
 }
 
 /**
@@ -129,6 +145,11 @@ export interface Tool {
         properties: Record<string, any>
         required?: string[]
     }
+
+    /**
+     * Parameters for the tool
+     */
+    parameters?: ToolParameter[]
 }
 
 /**

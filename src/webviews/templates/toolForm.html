@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tool: ${toolName}</title>
+    <style>
+        .tool-card {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: var(--vscode-editor-inactiveSelectionBackground);
+            border-radius: 4px;
+        }
+
+        .tool-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .tool-name-chip {
+            background-color: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .tool-description {
+            margin-bottom: 15px;
+            color: var(--vscode-descriptionForeground);
+        }
+
+        .parameter-group {
+            margin-bottom: 15px;
+        }
+
+        .parameter-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .parameter-description {
+            font-size: 0.9em;
+            color: var(--vscode-descriptionForeground);
+            margin-bottom: 5px;
+        }
+
+        .required-indicator {
+            color: var(--vscode-errorForeground);
+            margin-left: 3px;
+        }
+
+        .parameter-input {
+            width: 100%;
+            padding: 6px 8px;
+            box-sizing: border-box;
+            background-color: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 2px;
+        }
+
+        .parameter-input:focus {
+            outline: 1px solid var(--vscode-focusBorder);
+        }
+
+        .parameter-error {
+            color: var(--vscode-errorForeground);
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .send-button {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 2px;
+            margin-top: 10px;
+        }
+
+        .send-button:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result-container {
+            margin-top: 15px;
+            border-top: 1px solid var(--vscode-panel-border);
+            padding-top: 15px;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            background-color: var(--vscode-editor-inactiveSelectionBackground);
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+        }
+
+        .result-header.success {
+            border-left: 4px solid var(--vscode-testing-iconPassed);
+        }
+
+        .result-header.error {
+            border-left: 4px solid var(--vscode-errorForeground);
+        }
+
+        .result-status {
+            display: flex;
+            align-items: center;
+        }
+
+        .result-status-icon {
+            margin-right: 8px;
+            width: 16px;
+            height: 16px;
+        }
+
+        .result-status-text {
+            font-weight: bold;
+        }
+
+        .result-status-text.success {
+            color: var(--vscode-testing-iconPassed);
+        }
+
+        .result-status-text.error {
+            color: var(--vscode-errorForeground);
+        }
+
+        .result-toggle-icon {
+            transition: transform 0.2s;
+        }
+
+        .result-toggle-icon.open {
+            transform: rotate(180deg);
+        }
+
+        .result-content {
+            display: none;
+            padding: 10px;
+            background-color: var(--vscode-editor-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+        }
+
+        .result-content.open {
+            display: block;
+        }
+
+        .result-text {
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            margin: 0;
+            padding: 10px;
+            background-color: var(--vscode-textCodeBlock-background);
+            border-radius: 2px;
+        }
+
+        .show-more-button {
+            background: none;
+            border: none;
+            color: var(--vscode-textLink-foreground);
+            cursor: pointer;
+            padding: 5px 0;
+            margin-top: 5px;
+            text-decoration: underline;
+        }
+
+        .show-more-button:hover {
+            color: var(--vscode-textLink-activeForeground);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--vscode-progressBar-background);
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="tool-card">
+        <div class="tool-header">
+            <span class="tool-name-chip">${toolName}</span>
+        </div>
+        <div class="tool-description">${toolDescription}</div>
+
+        <form id="tool-form">
+            ${parameterInputs}
+
+            <button type="submit" class="send-button" id="send-button">
+                <span id="loading-spinner" class="loading-spinner hidden"></span>
+                <span id="button-text">Send</span>
+            </button>
+        </form>
+
+        <div id="result-container" class="result-container ${resultContainerClass}">
+            <div id="result-header" class="result-header ${resultStatusClass}">
+                <div class="result-status">
+                    <span class="result-status-icon">${resultStatusIcon}</span>
+                    <span class="result-status-text ${resultStatusClass}">${resultStatusText}</span>
+                </div>
+                <span id="result-toggle" class="result-toggle-icon ${resultToggleClass}">▼</span>
+            </div>
+            <div id="result-content" class="result-content ${resultContentClass}">
+                <pre id="result-text" class="result-text">${resultText}</pre>
+                <button id="show-more-button"
+                    class="show-more-button ${showMoreButtonClass}">${showMoreButtonText}</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+
+        // Form submission
+        document.getElementById('tool-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            // Collect parameter values
+            const parameters = {};
+            document.querySelectorAll('[data-parameter]').forEach(input => {
+                const name = input.getAttribute('data-parameter');
+                let value = input.value;
+
+                // Handle different input types
+                if (input.type === 'checkbox') {
+                    value = input.checked;
+                } else if (input.type === 'number') {
+                    value = Number(value);
+                }
+
+                parameters[name] = value;
+            });
+
+            // Show loading state
+            document.getElementById('loading-spinner').classList.remove('hidden');
+            document.getElementById('button-text').textContent = 'Executing...';
+            document.getElementById('send-button').disabled = true;
+
+            // Send message to execute tool
+            vscode.postMessage({
+                command: 'executeTool',
+                toolName: '${toolName}',
+                parameters: parameters
+            });
+        });
+
+        // Toggle result content
+        document.getElementById('result-header')?.addEventListener('click', () => {
+            const resultContent = document.getElementById('result-content');
+            const resultToggle = document.getElementById('result-toggle');
+
+            resultContent.classList.toggle('open');
+            resultToggle.classList.toggle('open');
+            resultToggle.textContent = resultContent.classList.contains('open') ? '▲' : '▼';
+        });
+
+        // Show more/less button
+        document.getElementById('show-more-button')?.addEventListener('click', () => {
+            const resultText = document.getElementById('result-text');
+            const showMoreButton = document.getElementById('show-more-button');
+
+            if (showMoreButton.textContent === 'Show more') {
+                resultText.textContent = '${fullResultText}';
+                showMoreButton.textContent = 'Show less';
+            } else {
+                resultText.textContent = '${truncatedResultText}';
+                showMoreButton.textContent = 'Show more';
+            }
+        });
+    </script>
+</body>
+
+</html>

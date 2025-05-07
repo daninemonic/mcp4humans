@@ -1,9 +1,9 @@
 /**
  * MCP Client utilities for the MCP4Humans extension
- * 
+ *
  * This module provides functions for interacting with MCP servers.
  */
-import { ServerConfig, Tool, ApiResponse } from '../models/types';
+import { ServerConfig, Tool, ApiResponse, ToolParameterType } from '../models/types'
 
 /**
  * Connect to an MCP server
@@ -14,19 +14,19 @@ export async function connectToServer(server: ServerConfig): Promise<ApiResponse
     try {
         // For now, this is just a placeholder
         // In a later task, this will be implemented to use the real MCP SDK
-        console.log(`Mock connecting to server: ${server.name}`);
-        
+        console.log(`Mock connecting to server: ${server.name}`)
+
         // Simulate a delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
+        await new Promise(resolve => setTimeout(resolve, 1000))
+
         return {
-            success: true
-        };
+            success: true,
+        }
     } catch (error) {
         return {
             success: false,
-            error: error instanceof Error ? error.message : String(error)
-        };
+            error: error instanceof Error ? error.message : String(error),
+        }
     }
 }
 
@@ -39,19 +39,19 @@ export async function disconnectFromServer(serverName: string): Promise<ApiRespo
     try {
         // For now, this is just a placeholder
         // In a later task, this will be implemented to use the real MCP SDK
-        console.log(`Mock disconnecting from server: ${serverName}`);
-        
+        console.log(`Mock disconnecting from server: ${serverName}`)
+
         // Simulate a delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
+        await new Promise(resolve => setTimeout(resolve, 500))
+
         return {
-            success: true
-        };
+            success: true,
+        }
     } catch (error) {
         return {
             success: false,
-            error: error instanceof Error ? error.message : String(error)
-        };
+            error: error instanceof Error ? error.message : String(error),
+        }
     }
 }
 
@@ -64,11 +64,11 @@ export async function getToolsList(serverName: string): Promise<ApiResponse<Tool
     try {
         // For now, this is just a placeholder
         // In a later task, this will be implemented to use the real MCP SDK
-        console.log(`Mock getting tools list from server: ${serverName}`);
-        
+        console.log(`Mock getting tools list from server: ${serverName}`)
+
         // Simulate a delay
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
+        await new Promise(resolve => setTimeout(resolve, 800))
+
         // Return mock tools
         return {
             success: true,
@@ -81,15 +81,29 @@ export async function getToolsList(serverName: string): Promise<ApiResponse<Tool
                         properties: {
                             param1: {
                                 type: 'string',
-                                description: 'A string parameter'
+                                description: 'A string parameter',
                             },
                             param2: {
                                 type: 'number',
-                                description: 'A number parameter'
-                            }
+                                description: 'A number parameter',
+                            },
                         },
-                        required: ['param1']
-                    }
+                        required: ['param1'],
+                    },
+                    parameters: [
+                        {
+                            name: 'param1',
+                            type: ToolParameterType.STRING,
+                            required: true,
+                            description: 'A string parameter',
+                        },
+                        {
+                            name: 'param2',
+                            type: ToolParameterType.NUMBER,
+                            required: false,
+                            description: 'A number parameter',
+                        },
+                    ],
                 },
                 {
                     name: 'mock-tool-2',
@@ -99,19 +113,57 @@ export async function getToolsList(serverName: string): Promise<ApiResponse<Tool
                         properties: {
                             flag: {
                                 type: 'boolean',
-                                description: 'A boolean parameter'
-                            }
+                                description: 'A boolean parameter',
+                            },
+                            option: {
+                                type: 'string',
+                                description: 'An string parameter',
+                            },
+                            data: {
+                                type: 'object',
+                                description: 'A JSON object parameter',
+                            },
+                            items: {
+                                type: 'array',
+                                description: 'An array parameter',
+                            },
                         },
-                        required: []
-                    }
-                }
-            ]
-        };
+                        required: [],
+                    },
+                    parameters: [
+                        {
+                            name: 'flag',
+                            type: ToolParameterType.BOOLEAN,
+                            required: false,
+                            description: 'A boolean parameter',
+                        },
+                        {
+                            name: 'option',
+                            type: ToolParameterType.STRING,
+                            required: false,
+                            description: 'A string parameter',
+                        },
+                        {
+                            name: 'data',
+                            type: ToolParameterType.OBJECT,
+                            required: false,
+                            description: 'A JSON object parameter',
+                        },
+                        {
+                            name: 'items',
+                            type: ToolParameterType.ARRAY,
+                            required: false,
+                            description: 'An array parameter',
+                        },
+                    ],
+                },
+            ],
+        }
     } catch (error) {
         return {
             success: false,
-            error: error instanceof Error ? error.message : String(error)
-        };
+            error: error instanceof Error ? error.message : String(error),
+        }
     }
 }
 
@@ -130,22 +182,22 @@ export async function executeTool(
     try {
         // For now, this is just a placeholder
         // In a later task, this will be implemented to use the real MCP SDK
-        console.log(`Mock executing tool ${toolName} on server ${serverName} with params:`, params);
-        
+        console.log(`Mock executing tool ${toolName} on server ${serverName} with params:`, params)
+
         // Simulate a delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
+        await new Promise(resolve => setTimeout(resolve, 1500))
+
         // Return mock result
         return {
             success: true,
             data: {
-                result: `Mock result for ${toolName} with params ${JSON.stringify(params)}`
-            }
-        };
+                result: `Mock result for ${toolName} with params ${JSON.stringify(params)}`,
+            },
+        }
     } catch (error) {
         return {
             success: false,
-            error: error instanceof Error ? error.message : String(error)
-        };
+            error: error instanceof Error ? error.message : String(error),
+        }
     }
 }

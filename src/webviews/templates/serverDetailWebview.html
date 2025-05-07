@@ -74,8 +74,10 @@
         .section {
             margin-bottom: 20px;
             padding: 15px;
-            background-color: var(--vscode-editor-inactiveSelectionBackground);
+            background-color: rgba(0, 0, 0, 0.1);
             border-radius: 4px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+            border-right: 1px solid var(--vscode-panel-border);
         }
 
         .section-title {
@@ -94,21 +96,198 @@
         }
 
         .tool-card {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             padding: 15px;
-            background-color: var(--vscode-editor-selectionBackground);
+            background-color: var(--vscode-editor-background);
             border-radius: 4px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+            border-right: 1px solid var(--vscode-panel-border);
         }
 
-        .tool-name {
-            font-size: 1.1em;
+        .tool-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .tool-name-chip {
+            background-color: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.9em;
             font-weight: bold;
-            margin-top: 0;
-            margin-bottom: 5px;
         }
 
         .tool-description {
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            color: var(--vscode-descriptionForeground);
+        }
+
+        .parameter-group {
+            margin-bottom: 15px;
+        }
+
+        .parameter-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .parameter-description {
+            font-size: 0.9em;
+            color: var(--vscode-descriptionForeground);
+            margin-bottom: 5px;
+        }
+
+        .required-indicator {
+            color: var(--vscode-errorForeground);
+            margin-left: 3px;
+        }
+
+        .parameter-input {
+            width: 100%;
+            padding: 6px 8px;
+            box-sizing: border-box;
+            background-color: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 2px;
+        }
+
+        .parameter-input:focus {
+            outline: 1px solid var(--vscode-focusBorder);
+        }
+
+        .parameter-error {
+            color: var(--vscode-errorForeground);
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .send-button {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 2px;
+            margin-top: 10px;
+        }
+
+        .send-button:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result-container {
+            margin-top: 15px;
+            border-top: 1px solid var(--vscode-panel-border);
+            padding-top: 15px;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            background-color: var(--vscode-editor-inactiveSelectionBackground);
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+        }
+
+        .result-header.success {
+            border-left: 4px solid var(--vscode-testing-iconPassed);
+        }
+
+        .result-header.error {
+            border-left: 4px solid var(--vscode-errorForeground);
+        }
+
+        .result-status {
+            display: flex;
+            align-items: center;
+        }
+
+        .result-status-icon {
+            margin-right: 8px;
+        }
+
+        .result-status-text {
+            font-weight: bold;
+        }
+
+        .result-status-text.success {
+            color: var(--vscode-testing-iconPassed);
+        }
+
+        .result-status-text.error {
+            color: var(--vscode-errorForeground);
+        }
+
+        .result-toggle {
+            transition: transform 0.2s;
+        }
+
+        .result-toggle.open {
+            transform: rotate(180deg);
+        }
+
+        .result-content {
+            display: none;
+            padding: 10px;
+            background-color: var(--vscode-editor-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+        }
+
+        .result-content.open {
+            display: block;
+        }
+
+        .result-text {
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            margin: 0;
+            padding: 10px;
+            background-color: var(--vscode-textCodeBlock-background);
+            border-radius: 2px;
+        }
+
+        .show-more-button {
+            background: none;
+            border: none;
+            color: var(--vscode-textLink-foreground);
+            cursor: pointer;
+            padding: 5px 0;
+            margin-top: 5px;
+            text-decoration: underline;
+        }
+
+        .show-more-button:hover {
+            color: var(--vscode-textLink-activeForeground);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--vscode-progressBar-background);
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        .hidden {
+            display: none !important;
         }
 
         .loading {
@@ -238,6 +417,174 @@
                 // Hide the modal and send the delete command
                 document.getElementById('delete-confirmation-modal').style.display = 'none';
                 vscode.postMessage({ command: 'deleteServer' });
+            } else if (e.target.classList.contains('result-toggle') || e.target.closest('.result-header')) {
+                // Toggle result content
+                const resultHeader = e.target.closest('.result-header');
+                if (resultHeader) {
+                    const resultContent = resultHeader.nextElementSibling;
+                    const resultToggle = resultHeader.querySelector('.result-toggle');
+
+                    resultContent.classList.toggle('open');
+                    resultToggle.classList.toggle('open');
+                    resultToggle.textContent = resultContent.classList.contains('open') ? '▲' : '▼';
+                }
+            } else if (e.target.classList.contains('show-more-button')) {
+                // Show more/less button
+                const button = e.target;
+                const resultText = button.previousElementSibling;
+
+                if (button.textContent === 'Show more') {
+                    // Show full text
+                    resultText.dataset.truncated = resultText.textContent;
+                    resultText.textContent = resultText.dataset.full;
+                    button.textContent = 'Show less';
+                } else {
+                    // Show truncated text
+                    resultText.textContent = resultText.dataset.truncated;
+                    button.textContent = 'Show more';
+                }
+            }
+        });
+
+        // Handle form submissions
+        document.addEventListener('submit', (e) => {
+            if (e.target.classList.contains('tool-form')) {
+                e.preventDefault();
+
+                const form = e.target;
+                const toolName = form.getAttribute('data-tool-name');
+
+                // Collect parameter values
+                const parameters = {};
+                form.querySelectorAll('[data-parameter]').forEach(input => {
+                    const name = input.getAttribute('data-parameter');
+                    let value = input.value;
+
+                    // Handle different input types
+                    if (input.type === 'number') {
+                        value = Number(value);
+                    } else if (input.tagName === 'SELECT' && (value === 'true' || value === 'false')) {
+                        // Handle boolean parameters
+                        value = value === 'true';
+                    } else if (input.tagName === 'TEXTAREA' && input.placeholder === '{}') {
+                        // Handle object parameters
+                        try {
+                            if (value.trim()) {
+                                value = JSON.parse(value);
+                            }
+                        } catch (error) {
+                            // Show error
+                            const errorElement = form.querySelector(`[data-error-for="${name}"]`);
+                            if (errorElement) {
+                                errorElement.textContent = 'Invalid JSON object';
+                            }
+                            return;
+                        }
+                    } else if (input.placeholder && input.placeholder.includes('["item1"')) {
+                        // Handle array parameters
+                        try {
+                            if (value.trim()) {
+                                value = JSON.parse(value);
+                            }
+                        } catch (error) {
+                            // Show error
+                            const errorElement = form.querySelector(`[data-error-for="${name}"]`);
+                            if (errorElement) {
+                                errorElement.textContent = 'Invalid JSON array';
+                            }
+                            return;
+                        }
+                    }
+
+                    parameters[name] = value;
+                });
+
+                // Clear previous errors
+                form.querySelectorAll('.parameter-error').forEach(el => {
+                    el.textContent = '';
+                });
+
+                // Show loading state
+                const sendButton = form.querySelector('.send-button');
+                const loadingSpinner = form.querySelector('.loading-spinner');
+                const buttonText = form.querySelector('.button-text');
+
+                sendButton.disabled = true;
+                loadingSpinner.classList.remove('hidden');
+                buttonText.textContent = 'Executing...';
+
+                // Send message to execute tool
+                vscode.postMessage({
+                    command: 'executeTool',
+                    toolName: toolName,
+                    params: parameters
+                });
+            }
+        });
+
+        // Handle messages from the extension
+        window.addEventListener('message', (event) => {
+            const message = event.data;
+
+            if (message.command === 'toolResult') {
+                const toolName = message.toolName;
+                const success = message.success;
+                const data = message.data;
+
+                // Find the tool card
+                const toolCard = document.getElementById(`tool-${toolName}`);
+                if (!toolCard) return;
+
+                // Reset the form
+                const form = toolCard.querySelector('.tool-form');
+                const sendButton = form.querySelector('.send-button');
+                const loadingSpinner = form.querySelector('.loading-spinner');
+                const buttonText = form.querySelector('.button-text');
+
+                sendButton.disabled = false;
+                loadingSpinner.classList.add('hidden');
+                buttonText.textContent = 'Send';
+
+                // Update the result container
+                const resultContainer = toolCard.querySelector('.result-container');
+                const resultHeader = resultContainer.querySelector('.result-header');
+                const resultStatusIcon = resultContainer.querySelector('.result-status-icon');
+                const resultStatusText = resultContainer.querySelector('.result-status-text');
+                const resultContent = resultContainer.querySelector('.result-content');
+                const resultText = resultContainer.querySelector('.result-text');
+                const showMoreButton = resultContainer.querySelector('.show-more-button');
+
+                // Show the result container
+                resultContainer.classList.remove('hidden');
+
+                // Update the header
+                resultHeader.className = 'result-header ' + (success ? 'success' : 'error');
+                resultStatusIcon.textContent = success ? '✓' : '✗';
+                resultStatusText.textContent = success ? 'Success' : 'Error';
+                resultStatusText.className = 'result-status-text ' + (success ? 'success' : 'error');
+
+                // Format the result as JSON
+                const resultJson = JSON.stringify(data, null, 2);
+
+                // Store the full result
+                resultText.dataset.full = resultJson;
+
+                // Truncate the result for collapsed view
+                const resultLines = resultJson.split('\n');
+                if (resultLines.length > 5) {
+                    resultText.textContent = resultLines.slice(0, 5).join('\n');
+                    resultText.dataset.truncated = resultText.textContent;
+                    showMoreButton.classList.remove('hidden');
+                    showMoreButton.textContent = 'Show more';
+                } else {
+                    resultText.textContent = resultJson;
+                    showMoreButton.classList.add('hidden');
+                }
+
+                // Close the result content
+                resultContent.classList.remove('open');
+                resultHeader.querySelector('.result-toggle').textContent = '▼';
+                resultHeader.querySelector('.result-toggle').classList.remove('open');
             }
         });
     </script>

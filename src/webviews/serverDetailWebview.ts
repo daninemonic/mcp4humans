@@ -4,8 +4,8 @@
  * This module provides a webview panel for displaying server details and tools.
  */
 import * as vscode from 'vscode'
-import { ServerConfig, Tool } from '../models/types'
-import { getToolsList } from '../services/mcpClient'
+import { ServerConfig, Tool, ToolParameterType } from '../models/types'
+import { getToolsList, executeTool } from '../services/mcpClient'
 import { getWebviewContent } from '../utils/webviewUtils'
 
 /**
@@ -236,11 +236,34 @@ export class ServerDetailWebview {
      * @param toolName The name of the tool to execute
      * @param params The parameters for the tool
      */
-    private _handleExecuteTool(toolName: string, params: any): void {
-        vscode.window.showInformationMessage(
-            `Execute tool ${toolName} with params: ${JSON.stringify(params)}`
-        )
-        // This will be implemented in a later task
+    private async _handleExecuteTool(toolName: string, params: any): Promise<void> {
+        // Find the tool by name
+        const tool = this._tools.find(t => t.name === toolName)
+        if (!tool) {
+            vscode.window.showErrorMessage(`Tool ${toolName} not found`)
+            return
+        }
+
+        try {
+            // Execute the tool
+            const response = await executeTool(this._server.name, toolName, params)
+
+            // Update the tool result in the UI
+            this._panel.webview.postMessage({
+                command: 'toolResult',
+                toolName: toolName,
+                success: response.success,
+                data: response.success ? response.data : response.error,
+            })
+        } catch (error) {
+            // Handle errors
+            this._panel.webview.postMessage({
+                command: 'toolResult',
+                toolName: toolName,
+                success: false,
+                data: error instanceof Error ? error.message : String(error),
+            })
+        }
     }
 
     /**
@@ -353,6 +376,60 @@ export class ServerDetailWebview {
     }
 
     /**
+     * Generate HTML for parameter inputs
+     * @param tool The tool to generate parameter inputs for
+     * @returns HTML for parameter inputs
+     */
+    private _generateParameterInputs(tool: Tool): string {
+        if (!tool.parameters || tool.parameters.length === 0) {
+            return '<p>This tool has no parameters.</p>'
+        }
+
+        const paramInputs = tool.parameters.map(param => {
+            const required = param.required ? '<span class="required-indicator">*</span>' : ''
+
+            let input = ''
+
+            switch (param.type) {
+                case ToolParameterType.STRING:
+                    // Regular string - use a text input
+                    input = `<input type="text" id="${tool.name}-${param.name}" name="${param.name}" class="parameter-input" data-parameter="${param.name}" value="${param.default || ''}" />`
+                    break
+                case ToolParameterType.NUMBER:
+                    input = `<input type="number" id="${tool.name}-${param.name}" name="${param.name}" class="parameter-input" data-parameter="${param.name}" value="${param.default || ''}" />`
+                    break
+                case ToolParameterType.BOOLEAN:
+                    input = `
+                        <select id="${tool.name}-${param.name}" name="${param.name}" class="parameter-input" data-parameter="${param.name}">
+                            <option value="true" ${param.default === true ? 'selected' : ''}>true</option>
+                            <option value="false" ${param.default === false ? 'selected' : ''}>false</option>
+                        </select>
+                    `
+                    break
+                case ToolParameterType.OBJECT:
+                    input = `<textarea id="${tool.name}-${param.name}" name="${param.name}" class="parameter-input" data-parameter="${param.name}" rows="5" placeholder="{}">${param.default || ''}</textarea>`
+                    break
+                case ToolParameterType.ARRAY:
+                    input = `<input type="text" id="${tool.name}-${param.name}" name="${param.name}" class="parameter-input" data-parameter="${param.name}" placeholder='["item1", "item2"]' value="${param.default ? JSON.stringify(param.default) : ''}" />`
+                    break
+                default:
+                    input = `<input type="text" id="${tool.name}-${param.name}" name="${param.name}" class="parameter-input" data-parameter="${param.name}" />`
+            }
+
+            return `
+                <div class="parameter-group">
+                    <label for="${tool.name}-${param.name}" class="parameter-label">${param.name}${required}</label>
+                    ${param.description ? `<div class="parameter-description">${param.description}</div>` : ''}
+                    ${input}
+                    <div class="parameter-error" data-error-for="${param.name}"></div>
+                </div>
+            `
+        })
+
+        return paramInputs.join('')
+    }
+
+    /**
      * Get the HTML for the tools section
      * @returns The HTML for the tools section
      */
@@ -392,11 +469,38 @@ export class ServerDetailWebview {
         // Generate HTML for each tool
         const toolsHtml = this._tools
             .map(tool => {
+                // Generate parameter inputs
+                const parameterInputs = this._generateParameterInputs(tool)
+
                 return `
-                <div class="tool-card">
-                    <h3 class="tool-name">${tool.name}</h3>
+                <div class="tool-card" id="tool-${tool.name}">
+                    <div class="tool-header">
+                        <span class="tool-name-chip">${tool.name}</span>
+                    </div>
                     <p class="tool-description">${tool.description}</p>
-                    <button class="execute-tool-button" data-tool-name="${tool.name}">Send</button>
+
+                    <form class="tool-form" data-tool-name="${tool.name}">
+                        ${parameterInputs}
+
+                        <button type="submit" class="send-button">
+                            <span class="loading-spinner hidden"></span>
+                            <span class="button-text">Send</span>
+                        </button>
+                    </form>
+
+                    <div class="result-container hidden">
+                        <div class="result-header">
+                            <div class="result-status">
+                                <span class="result-status-icon"></span>
+                                <span class="result-status-text"></span>
+                            </div>
+                            <span class="result-toggle">▼</span>
+                        </div>
+                        <div class="result-content">
+                            <pre class="result-text"></pre>
+                            <button class="show-more-button hidden">Show more</button>
+                        </div>
+                    </div>
                 </div>
             `
             })
