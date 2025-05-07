@@ -7,7 +7,8 @@ import * as vscode from 'vscode'
 import { ServerExplorerProvider } from './views/serverExplorerProvider'
 import { ServerDetailWebview } from './webviews/serverDetailWebview'
 import { ServerConfigForm } from './webviews/serverConfigForm'
-import { addServer, updateServer } from './services/storage'
+import { addServer, updateServer, deleteServer } from './services/storage'
+import { connectToServer, disconnectFromServer } from './services/mcpClient'
 
 /**
  * Registers all commands for the extension
@@ -41,11 +42,20 @@ export function registerCommands(
     // Register the delete server command
     const deleteServerCommand = vscode.commands.registerCommand(
         'mcp4humans.deleteServer',
-        server => {
-            // This will be implemented in a later task
-            vscode.window.showInformationMessage(
-                `Delete server command triggered for ${server?.name || 'unknown'}`
-            )
+        async server => {
+            if (!server) {
+                return
+            }
+
+            // Delete the server
+            const response = await deleteServer(context, server.name)
+
+            if (response.success) {
+                vscode.window.showInformationMessage(`Server "${server.name}" deleted successfully`)
+                vscode.commands.executeCommand('mcp4humans.refreshServerList')
+            } else {
+                vscode.window.showErrorMessage(`Failed to delete server: ${response.error}`)
+            }
         }
     )
 
@@ -63,32 +73,81 @@ export function registerCommands(
     // Register the connect server command
     const connectServerCommand = vscode.commands.registerCommand(
         'mcp4humans.connectServer',
-        server => {
-            // This will be implemented in a later task
-            vscode.window.showInformationMessage(
-                `Connect server command triggered for ${server?.name || 'unknown'}`
-            )
-
-            // Update the server detail webview if it's open
-            if (ServerDetailWebview.currentPanel && server) {
-                ServerDetailWebview.currentPanel.update(server, true)
+        async server => {
+            if (!server) {
+                return
             }
+
+            // Show progress notification
+            vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: `Connecting to ${server.name}...`,
+                    cancellable: false,
+                },
+                async () => {
+                    // Connect to the server
+                    const response = await connectToServer(server)
+
+                    if (response.success) {
+                        vscode.window.showInformationMessage(
+                            `Connected to ${server.name} successfully`
+                        )
+
+                        // Update the server detail webview if it's open
+                        if (ServerDetailWebview.currentPanel) {
+                            ServerDetailWebview.currentPanel.update(server, true)
+                        }
+                    } else {
+                        vscode.window.showErrorMessage(
+                            `Failed to connect to ${server.name}: ${response.error}`
+                        )
+
+                        // Update the server detail webview if it's open
+                        if (ServerDetailWebview.currentPanel) {
+                            ServerDetailWebview.currentPanel.update(server, false)
+                        }
+                    }
+                }
+            )
         }
     )
 
     // Register the disconnect server command
     const disconnectServerCommand = vscode.commands.registerCommand(
         'mcp4humans.disconnectServer',
-        server => {
-            // This will be implemented in a later task
-            vscode.window.showInformationMessage(
-                `Disconnect server command triggered for ${server?.name || 'unknown'}`
-            )
-
-            // Update the server detail webview if it's open
-            if (ServerDetailWebview.currentPanel && server) {
-                ServerDetailWebview.currentPanel.update(server, false)
+        async server => {
+            if (!server) {
+                return
             }
+
+            // Show progress notification
+            vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: `Disconnecting from ${server.name}...`,
+                    cancellable: false,
+                },
+                async () => {
+                    // Disconnect from the server
+                    const response = await disconnectFromServer(server.name)
+
+                    if (response.success) {
+                        vscode.window.showInformationMessage(
+                            `Disconnected from ${server.name} successfully`
+                        )
+                    } else {
+                        vscode.window.showErrorMessage(
+                            `Failed to disconnect from ${server.name}: ${response.error}`
+                        )
+                    }
+
+                    // Update the server detail webview if it's open
+                    if (ServerDetailWebview.currentPanel) {
+                        ServerDetailWebview.currentPanel.update(server, false)
+                    }
+                }
+            )
         }
     )
 

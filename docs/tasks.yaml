@@ -341,7 +341,7 @@ tasks:
 - task_id: UI-COMP-003
   group: UI
   subgroup: Components
-  status: in_progress
+  status: done
   title: Implement Tool Form Component
   description: 'Create a component for displaying and interacting with MCP tools.
     This should include the tool name, description, parameter inputs, and a send button.
@@ -552,7 +552,7 @@ tasks:
 - task_id: STORAGE-PERSIST-001
   group: Storage
   subgroup: Persistence
-  status: pending
+  status: done
   title: Implement Server Configuration Storage
   description: Implement storage for server configurations using VSCode's extension
     storage API (Memento). This should replace the mock data used in the UI components
@@ -572,18 +572,31 @@ tasks:
     description: VSCode Data Storage API
   depends_on:
   - UI-COMP-005
+  completed:
+    timestamp: '2025-05-07 18:11:49'
+    complies_to_specs: true
+    tested: true
+    notes: Implemented real storage for server configurations using VSCode's extension
+      storage API (Memento). Replaced the mock data with persistent storage for all
+      server management operations. Implemented the getServers, addServer, updateServer,
+      and deleteServer functions to use the globalState storage. Updated the deleteServer
+      command to use the real storage implementation. The implementation includes
+      validation to prevent duplicate server names and proper error handling.
 - task_id: MCP-CLIENT-001
   group: MCP
   subgroup: Client
-  status: pending
+  status: in_progress
   title: Implement MCP Client
   description: Implement a client for communicating with MCP servers using the MCP
-    SDK. This should support both STDIO and SSE transport types and handle connection,
+    SDK. The electron client is available in docs/electron_mcp_client.ts as an example.
+    This should support both STDIO and SSE transport types and handle connection,
     tool listing, and tool execution. Implement robust error handling for MCP client
     operations. Display appropriate error messages to the user when operations fail.
     Update the UI components to use the real MCP client implementation instead of
     mock data. This includes connecting to servers, listing tools, and executing tools
-    with real data.
+    with real data. After this task is complete, the extension should be fully functional
+    to connect -> see server saved in config -> be able to edit and remove server
+    and see config updates -> connect to server -> see tools -> execute tools.
   specs:
     section: MCP Client Communication
     lines: 422-425

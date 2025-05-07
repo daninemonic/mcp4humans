@@ -3,14 +3,14 @@
  *
  * This module provides functions for storing and retrieving data from VSCode's extension storage.
  */
-import * as vscode from 'vscode';
-import { ServerConfig, ApiResponse, TransportType } from '../models/types';
+import * as vscode from 'vscode'
+import { ServerConfig, ApiResponse, TransportType } from '../models/types'
 
 /**
  * Storage keys
  */
 export enum StorageKeys {
-    SERVERS = 'mcp4humans.servers'
+    SERVERS = 'mcp4humans.servers',
 }
 
 /**
@@ -18,55 +18,22 @@ export enum StorageKeys {
  * @param context The extension context
  * @returns A promise that resolves to an ApiResponse containing the servers
  */
-export async function getServers(context: vscode.ExtensionContext): Promise<ApiResponse<ServerConfig[]>> {
+export async function getServers(
+    context: vscode.ExtensionContext
+): Promise<ApiResponse<ServerConfig[]>> {
     try {
-        // Mock data based on the schema example
-        // In a later task, this will be replaced with real storage
-        const mockServers: ServerConfig[] = [
-            {
-                name: "context7",
-                description: "Context7 MCP Server",
-                transportType: "stdio" as TransportType,
-                stdioConfig: {
-                    cmd: "npx",
-                    args: [
-                        "-y",
-                        "@upstash/context7-mcp@latest"
-                    ]
-                }
-            },
-            {
-                name: "mcp-coda",
-                description: "Codebase Analysis MCP Server",
-                transportType: "stdio" as TransportType,
-                stdioConfig: {
-                    cmd: "python",
-                    args: ["-m", "mcp_coda.server"],
-                    cwd: "/path/to/mcp-coda"
-                }
-            },
-            {
-                name: "mcp-fetch",
-                description: "Web Fetching MCP Server",
-                transportType: "sse" as TransportType,
-                sseConfig: {
-                    url: "http://localhost:8000/sse",
-                    headers: {
-                        "Authorization": "Bearer mock-token"
-                    }
-                }
-            }
-        ];
+        // Get servers from global state
+        const servers = context.globalState.get<ServerConfig[]>(StorageKeys.SERVERS) || []
 
         return {
             success: true,
-            data: mockServers
-        };
+            data: servers,
+        }
     } catch (error) {
         return {
             success: false,
-            error: error instanceof Error ? error.message : String(error)
-        };
+            error: error instanceof Error ? error.message : String(error),
+        }
     }
 }
 
@@ -81,16 +48,31 @@ export async function addServer(
     server: ServerConfig
 ): Promise<ApiResponse<void>> {
     try {
-        // For now, this is just a placeholder
-        // In a later task, this will be implemented to use real storage
+        // Get current servers
+        const servers = context.globalState.get<ServerConfig[]>(StorageKeys.SERVERS) || []
+
+        // Check if a server with the same name already exists
+        if (servers.some(s => s.name === server.name)) {
+            return {
+                success: false,
+                error: `A server with the name "${server.name}" already exists`,
+            }
+        }
+
+        // Add the new server
+        servers.push(server)
+
+        // Save the updated servers list
+        await context.globalState.update(StorageKeys.SERVERS, servers)
+
         return {
-            success: true
-        };
+            success: true,
+        }
     } catch (error) {
         return {
             success: false,
-            error: error instanceof Error ? error.message : String(error)
-        };
+            error: error instanceof Error ? error.message : String(error),
+        }
     }
 }
 
@@ -107,16 +89,45 @@ export async function updateServer(
     oldName?: string
 ): Promise<ApiResponse<void>> {
     try {
-        // For now, this is just a placeholder
-        // In a later task, this will be implemented to use real storage
+        // Get current servers
+        const servers = context.globalState.get<ServerConfig[]>(StorageKeys.SERVERS) || []
+
+        // If oldName is provided and different from the new name, check if the new name already exists
+        if (oldName && oldName !== server.name) {
+            if (servers.some(s => s.name === server.name)) {
+                return {
+                    success: false,
+                    error: `A server with the name "${server.name}" already exists`,
+                }
+            }
+        }
+
+        // Find the server to update
+        const serverIndex = oldName
+            ? servers.findIndex(s => s.name === oldName)
+            : servers.findIndex(s => s.name === server.name)
+
+        if (serverIndex === -1) {
+            return {
+                success: false,
+                error: `Server "${oldName || server.name}" not found`,
+            }
+        }
+
+        // Update the server
+        servers[serverIndex] = server
+
+        // Save the updated servers list
+        await context.globalState.update(StorageKeys.SERVERS, servers)
+
         return {
-            success: true
-        };
+            success: true,
+        }
     } catch (error) {
         return {
             success: false,
-            error: error instanceof Error ? error.message : String(error)
-        };
+            error: error instanceof Error ? error.message : String(error),
+        }
     }
 }
 
@@ -131,15 +142,32 @@ export async function deleteServer(
     name: string
 ): Promise<ApiResponse<void>> {
     try {
-        // For now, this is just a placeholder
-        // In a later task, this will be implemented to use real storage
+        // Get current servers
+        const servers = context.globalState.get<ServerConfig[]>(StorageKeys.SERVERS) || []
+
+        // Find the server to delete
+        const serverIndex = servers.findIndex(s => s.name === name)
+
+        if (serverIndex === -1) {
+            return {
+                success: false,
+                error: `Server "${name}" not found`,
+            }
+        }
+
+        // Remove the server
+        servers.splice(serverIndex, 1)
+
+        // Save the updated servers list
+        await context.globalState.update(StorageKeys.SERVERS, servers)
+
         return {
-            success: true
-        };
+            success: true,
+        }
     } catch (error) {
         return {
             success: false,
-            error: error instanceof Error ? error.message : String(error)
-        };
+            error: error instanceof Error ? error.message : String(error),
+        }
     }
 }
