@@ -5,7 +5,10 @@
 /**
  * Transport type for MCP servers
  */
-export type TransportType = 'stdio' | 'sse';
+export enum TransportType {
+    STDIO = 'stdio',
+    SSE = 'sse',
+}
 
 /**
  * Configuration for an MCP STDIO server
@@ -14,22 +17,22 @@ export interface StdioConfig {
     /**
      * Command to run the server
      */
-    cmd: string;
+    cmd: string
 
     /**
      * Arguments for the command
      */
-    args: string[];
+    args: string[]
 
     /**
      * Working directory for the command
      */
-    cwd?: string | null;
+    cwd?: string | null
 
     /**
      * Environment variables to pass to the server process
      */
-    environment?: Record<string, string> | null;
+    environment?: Record<string, string> | null
 }
 
 /**
@@ -39,12 +42,12 @@ export interface SSEConfig {
     /**
      * URL for the SSE server (format: http[s]://{host}:{port}/sse)
      */
-    url: string;
+    url: string
 
     /**
      * Headers for the SSE connection
      */
-    headers?: Record<string, string>;
+    headers?: Record<string, string>
 }
 
 /**
@@ -54,29 +57,29 @@ export interface ServerConfig {
     /**
      * Name of the server (used as unique identifier)
      */
-    name: string;
+    name: string
 
     /**
      * Description of the server
      */
-    description?: string;
+    description?: string
 
     /**
      * Transport type (stdio or sse)
      */
-    transportType: TransportType;
+    transportType: TransportType
 
     /**
      * Configuration for STDIO transport
      * Required if transportType is 'stdio'
      */
-    stdioConfig?: StdioConfig;
+    stdioConfig?: StdioConfig
 
     /**
      * Configuration for SSE transport
      * Required if transportType is 'sse'
      */
-    sseConfig?: SSEConfig;
+    sseConfig?: SSEConfig
 }
 
 /**
@@ -86,22 +89,22 @@ export interface ToolParameter {
     /**
      * Name of the parameter
      */
-    name: string;
+    name: string
 
     /**
      * Data type of the parameter
      */
-    type: string;
+    type: string
 
     /**
      * Whether the parameter is required
      */
-    required: boolean;
+    required: boolean
 
     /**
      * Description of the parameter
      */
-    description: string;
+    description: string
 }
 
 /**
@@ -111,21 +114,21 @@ export interface Tool {
     /**
      * Name of the tool
      */
-    name: string;
+    name: string
 
     /**
      * Description of the tool
      */
-    description: string;
+    description: string
 
     /**
      * Input schema for the tool
      */
     inputSchema: {
-        type: string;
-        properties: Record<string, any>;
-        required?: string[];
-    };
+        type: string
+        properties: Record<string, any>
+        required?: string[]
+    }
 }
 
 /**
@@ -135,7 +138,7 @@ export interface ServerSchema extends ServerConfig {
     /**
      * List of tools provided by the server
      */
-    tools: Tool[];
+    tools: Tool[]
 }
 
 /**
@@ -145,15 +148,15 @@ export interface ApiResponse<T> {
     /**
      * Whether the operation was successful
      */
-    success: boolean;
+    success: boolean
 
     /**
      * The data returned by the operation
      */
-    data?: T;
+    data?: T
 
     /**
      * Error message if the operation failed
      */
-    error?: string;
+    error?: string
 }

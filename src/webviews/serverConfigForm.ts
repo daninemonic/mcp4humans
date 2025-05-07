@@ -4,8 +4,9 @@
  * This module provides a webview panel for adding and editing server configurations.
  */
 import * as vscode from 'vscode'
-import { ServerConfig } from '../models/types'
+import { ServerConfig, TransportType } from '../models/types'
 import { connectToServer, getToolsList } from '../services/mcpClient'
+import { parseJsonConfig } from '../services/jsonParser'
 
 /**
  * Class that manages the server configuration form webview panel
@@ -110,11 +111,8 @@ export class ServerConfigForm {
         this._panel.webview.onDidReceiveMessage(
             async message => {
                 switch (message.command) {
-                    case 'saveServer':
-                        await this._handleSaveServer(message.server)
-                        return
-                    case 'testConnection':
-                        await this._handleTestConnection(message.server)
+                    case 'connectAndSave':
+                        await this._handleConnectAndSave(message.server)
                         return
                     case 'parseJson':
                         this._handleParseJson(message.json)
@@ -147,10 +145,10 @@ export class ServerConfigForm {
     }
 
     /**
-     * Handle saving the server configuration
+     * Handle connecting to and saving the server configuration
      * @param server The server configuration to save
      */
-    private async _handleSaveServer(server: ServerConfig): Promise<void> {
+    private async _handleConnectAndSave(server: ServerConfig): Promise<void> {
         // Validate the server configuration
         const validationErrors = this._validateServer(server)
         if (Object.keys(validationErrors).length > 0) {
@@ -159,7 +157,7 @@ export class ServerConfigForm {
             return
         }
 
-        // Test the connection before saving
+        // Connect to the server
         this._isTesting = true
         this._update()
 
@@ -185,55 +183,21 @@ export class ServerConfigForm {
         this._isTesting = false
 
         // Save the server configuration
-        let response
-
-        // We can't directly access the extension context here, so we'll use commands
-        // to have the extension handle the storage operations
         vscode.commands.executeCommand('mcp4humans.saveServer', server, this._isEditing)
 
-        // For now, assume success since the actual saving will be handled by the command
-        response = { success: true, error: undefined }
+        // Show success message
+        vscode.window.showInformationMessage(
+            `Server ${this._isEditing ? 'updated' : 'added'} successfully`
+        )
 
-        if (response.success) {
-            vscode.window.showInformationMessage(
-                `Server ${this._isEditing ? 'updated' : 'added'} successfully`
-            )
-            vscode.commands.executeCommand('mcp4humans.refreshServerList')
-            this._panel.dispose()
-        } else {
-            vscode.window.showErrorMessage(
-                `Failed to ${this._isEditing ? 'update' : 'add'} server: ${response.error}`
-            )
-        }
-    }
+        // Refresh the server list
+        vscode.commands.executeCommand('mcp4humans.refreshServerList')
 
-    /**
-     * Handle testing the connection to a server
-     * @param server The server configuration to test
-     */
-    private async _handleTestConnection(server: ServerConfig): Promise<void> {
-        // Validate the server configuration
-        const validationErrors = this._validateServer(server)
-        if (Object.keys(validationErrors).length > 0) {
-            this._validationErrors = validationErrors
-            this._update()
-            return
-        }
+        // Keep the server connected
+        vscode.commands.executeCommand('mcp4humans.connectServer', server)
 
-        this._isTesting = true
-        this._update()
-
-        const connectResponse = await connectToServer(server)
-
-        this._isTesting = false
-
-        if (connectResponse.success) {
-            vscode.window.showInformationMessage(`Successfully connected to server: ${server.name}`)
-        } else {
-            vscode.window.showErrorMessage(`Failed to connect to server: ${connectResponse.error}`)
-        }
-
-        this._update()
+        // Close the form
+        this._panel.dispose()
     }
 
     /**
@@ -241,31 +205,19 @@ export class ServerConfigForm {
      * @param json The JSON string to parse
      */
     private _handleParseJson(json: string): void {
-        try {
-            const config = JSON.parse(json)
+        // Use the flexible JSON parser
+        const result = parseJsonConfig(json)
 
-            // Validate the parsed configuration
-            if (!config.name || !config.transportType) {
-                throw new Error('Invalid server configuration: missing required fields')
-            }
-
-            if (config.transportType === 'stdio' && !config.stdioConfig) {
-                throw new Error('Invalid server configuration: missing STDIO configuration')
-            }
-
-            if (config.transportType === 'sse' && !config.sseConfig) {
-                throw new Error('Invalid server configuration: missing SSE configuration')
-            }
-
+        if (result.success && result.data) {
             // Update the server configuration
-            this._server = config
+            this._server = result.data
             this._validationErrors = {}
             this._update()
 
             vscode.window.showInformationMessage('JSON configuration parsed successfully')
-        } catch (error) {
+        } else {
             vscode.window.showErrorMessage(
-                `Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`
+                `Failed to parse JSON: ${result.error || 'Unknown error'}`
             )
         }
     }
@@ -286,7 +238,7 @@ export class ServerConfigForm {
             errors.transportType = 'Transport type is required'
         }
 
-        if (server.transportType === 'stdio') {
+        if (server.transportType === TransportType.STDIO) {
             if (!server.stdioConfig) {
                 errors.stdioConfig = 'STDIO configuration is required'
             } else {
@@ -296,7 +248,7 @@ export class ServerConfigForm {
             }
         }
 
-        if (server.transportType === 'sse') {
+        if (server.transportType === TransportType.SSE) {
             if (!server.sseConfig) {
                 errors.sseConfig = 'SSE configuration is required'
             } else {
@@ -326,7 +278,7 @@ export class ServerConfigForm {
         const defaultServer: ServerConfig = this._server || {
             name: '',
             description: '',
-            transportType: 'stdio',
+            transportType: TransportType.STDIO,
             stdioConfig: {
                 cmd: '',
                 args: [],
@@ -505,11 +457,11 @@ export class ServerConfigForm {
                     <div class="form-group">
                         <div class="radio-group">
                             <div class="radio-option">
-                                <input type="radio" id="transport-stdio" name="transport-type" value="stdio" ${defaultServer.transportType === 'stdio' ? 'checked' : ''} />
+                                <input type="radio" id="transport-stdio" name="transport-type" value="stdio" ${defaultServer.transportType === TransportType.STDIO ? 'checked' : ''} />
                                 <label for="transport-stdio">STDIO</label>
                             </div>
                             <div class="radio-option">
-                                <input type="radio" id="transport-sse" name="transport-type" value="sse" ${defaultServer.transportType === 'sse' ? 'checked' : ''} />
+                                <input type="radio" id="transport-sse" name="transport-type" value="sse" ${defaultServer.transportType === TransportType.SSE ? 'checked' : ''} />
                                 <label for="transport-sse">SSE</label>
                             </div>
                         </div>
@@ -517,7 +469,7 @@ export class ServerConfigForm {
                     </div>
                 </div>
 
-                <div id="stdio-config" class="section ${defaultServer.transportType !== 'stdio' ? 'hidden' : ''}">
+                <div id="stdio-config" class="section ${defaultServer.transportType !== TransportType.STDIO ? 'hidden' : ''}">
                     <h2 class="section-title">STDIO Configuration</h2>
                     <div class="form-group">
                         <label for="stdio-cmd">Command<span class="required">*</span></label>
@@ -567,7 +519,7 @@ export class ServerConfigForm {
                     </div>
                 </div>
 
-                <div id="sse-config" class="section ${defaultServer.transportType !== 'sse' ? 'hidden' : ''}">
+                <div id="sse-config" class="section ${defaultServer.transportType !== TransportType.SSE ? 'hidden' : ''}">
                     <h2 class="section-title">SSE Configuration</h2>
                     <div class="form-group">
                         <label for="sse-url">URL<span class="required">*</span></label>
@@ -609,8 +561,7 @@ export class ServerConfigForm {
                 </div>
 
                 <div class="button-container">
-                    <button id="test-connection-btn">Test Connection</button>
-                    <button id="save-btn">Save</button>
+                    <button id="connect-btn">Connect</button>
                     <button id="cancel-btn">Cancel</button>
                 </div>
 
@@ -703,20 +654,11 @@ export class ServerConfigForm {
                         }
                     });
 
-                    // Test connection button
-                    document.getElementById('test-connection-btn').addEventListener('click', () => {
+                    // Connect button
+                    document.getElementById('connect-btn').addEventListener('click', () => {
                         const server = getServerConfig();
                         vscode.postMessage({
-                            command: 'testConnection',
-                            server
-                        });
-                    });
-
-                    // Save button
-                    document.getElementById('save-btn').addEventListener('click', () => {
-                        const server = getServerConfig();
-                        vscode.postMessage({
-                            command: 'saveServer',
+                            command: 'connectAndSave',
                             server
                         });
                     });
