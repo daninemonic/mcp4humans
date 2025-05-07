@@ -3,16 +3,19 @@
  *
  * This class provides the data for the Server Explorer tree view.
  */
-import * as vscode from 'vscode';
-import { ServerTreeItem } from './serverTreeItem';
-import { getServers } from '../services/storage';
+import * as vscode from 'vscode'
+import { ServerTreeItem } from './serverTreeItem'
+import { getServers } from '../services/storage'
+import { isServerConnected } from '../services/mcpClient'
 
 /**
  * Provider for the Server Explorer tree view
  */
 export class ServerExplorerProvider implements vscode.TreeDataProvider<ServerTreeItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<ServerTreeItem | undefined | null | void> = new vscode.EventEmitter<ServerTreeItem | undefined | null | void>();
-    readonly onDidChangeTreeData: vscode.Event<ServerTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
+    private _onDidChangeTreeData: vscode.EventEmitter<ServerTreeItem | undefined | null | void> =
+        new vscode.EventEmitter<ServerTreeItem | undefined | null | void>()
+    readonly onDidChangeTreeData: vscode.Event<ServerTreeItem | undefined | null | void> =
+        this._onDidChangeTreeData.event
 
     /**
      * Constructor
@@ -24,7 +27,7 @@ export class ServerExplorerProvider implements vscode.TreeDataProvider<ServerTre
      * Refresh the tree view
      */
     refresh(): void {
-        this._onDidChangeTreeData.fire(undefined);
+        this._onDidChangeTreeData.fire(undefined)
     }
 
     /**
@@ -33,7 +36,7 @@ export class ServerExplorerProvider implements vscode.TreeDataProvider<ServerTre
      * @returns The tree item
      */
     getTreeItem(element: ServerTreeItem): vscode.TreeItem {
-        return element;
+        return element
     }
 
     /**
@@ -45,10 +48,10 @@ export class ServerExplorerProvider implements vscode.TreeDataProvider<ServerTre
         if (element) {
             // If we have an element, we're looking for its children
             // For now, we don't have any children for server items
-            return Promise.resolve([]);
+            return Promise.resolve([])
         } else {
             // If we don't have an element, we're looking for the root items
-            return this.getServers();
+            return this.getServers()
         }
     }
 
@@ -58,23 +61,26 @@ export class ServerExplorerProvider implements vscode.TreeDataProvider<ServerTre
      */
     private async getServers(): Promise<ServerTreeItem[]> {
         // Get servers from storage utility
-        const response = await getServers(this.context);
+        const response = await getServers(this.context)
 
         if (!response.success || !response.data) {
             // If there was an error, show it and return an empty array
             if (response.error) {
-                vscode.window.showErrorMessage(`Failed to get servers: ${response.error}`);
+                vscode.window.showErrorMessage(`Failed to get servers: ${response.error}`)
             }
-            return [];
+            return []
         }
 
         // Map the servers to tree items
-        return response.data.map(server => new ServerTreeItem(
-            server.name,
-            server.description || '',
-            server.transportType,
-            false, // isConnected - we'll implement real connection status later
-            server
-        ));
+        return response.data.map(
+            server =>
+                new ServerTreeItem(
+                    server.name,
+                    server.description || '',
+                    server.transportType,
+                    isServerConnected(server.name), // Check if the server is connected
+                    server
+                )
+        )
     }
 }

@@ -5,7 +5,7 @@
  */
 import * as vscode from 'vscode'
 import { ServerConfig, TransportType } from '../models/types'
-import { connectToServer, getToolsList } from '../services/mcpClient'
+import { connectToServer, getToolsList, disconnectFromServer } from '../services/mcpClient'
 import { parseJsonConfig } from '../services/jsonParser'
 import { getWebviewContent } from '../utils/webviewUtils'
 
@@ -167,6 +167,10 @@ export class ServerConfigForm {
             this._isTesting = false
             vscode.window.showErrorMessage(`Failed to connect to server: ${connectResponse.error}`)
             this._update()
+
+            // Keep the form open with current values
+            this._server = server
+
             return
         }
 
@@ -177,6 +181,12 @@ export class ServerConfigForm {
             vscode.window.showErrorMessage(
                 `Failed to get tools from server: ${toolsResponse.error}`
             )
+
+            // Make sure it's disconnected
+            await disconnectFromServer(server.name)
+
+            // Keep the form open with current values
+            this._server = server
             this._update()
             return
         }
@@ -185,11 +195,6 @@ export class ServerConfigForm {
 
         // Save the server configuration
         vscode.commands.executeCommand('mcp4humans.saveServer', server, this._isEditing)
-
-        // Show success message
-        vscode.window.showInformationMessage(
-            `Server ${this._isEditing ? 'updated' : 'added'} successfully`
-        )
 
         // Refresh the server list
         vscode.commands.executeCommand('mcp4humans.refreshServerList')
@@ -214,8 +219,6 @@ export class ServerConfigForm {
             this._server = result.data
             this._validationErrors = {}
             this._update()
-
-            vscode.window.showInformationMessage('JSON configuration parsed successfully')
         } else {
             vscode.window.showErrorMessage(
                 `Failed to parse JSON: ${result.error || 'Unknown error'}`

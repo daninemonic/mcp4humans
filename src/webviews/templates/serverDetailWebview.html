@@ -434,11 +434,10 @@
 
                 if (button.textContent === 'Show more') {
                     // Show full text
-                    resultText.dataset.truncated = resultText.textContent;
                     resultText.textContent = resultText.dataset.full;
                     button.textContent = 'Show less';
                 } else {
-                    // Show truncated text
+                    // Show truncated text (first 5 lines)
                     resultText.textContent = resultText.dataset.truncated;
                     button.textContent = 'Show more';
                 }
@@ -576,6 +575,7 @@
                 // Truncate the result for collapsed view
                 const resultLines = resultJson.split('\n');
                 if (resultLines.length > 5) {
+                    // Show first 5 lines only
                     resultText.textContent = resultLines.slice(0, 5).join('\n');
                     resultText.dataset.truncated = resultText.textContent;
                     showMoreButton.classList.remove('hidden');

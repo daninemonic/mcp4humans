@@ -22,7 +22,6 @@ export function registerCommands(
     // Register the refresh command
     const refreshCommand = vscode.commands.registerCommand('mcp4humans.refreshServerList', () => {
         serverExplorerProvider.refresh()
-        vscode.window.showInformationMessage('Server list refreshed')
     })
 
     // Register the add server command
@@ -51,7 +50,6 @@ export function registerCommands(
             const response = await deleteServer(context, server.name)
 
             if (response.success) {
-                vscode.window.showInformationMessage(`Server "${server.name}" deleted successfully`)
                 vscode.commands.executeCommand('mcp4humans.refreshServerList')
             } else {
                 vscode.window.showErrorMessage(`Failed to delete server: ${response.error}`)
@@ -90,14 +88,13 @@ export function registerCommands(
                     const response = await connectToServer(server)
 
                     if (response.success) {
-                        vscode.window.showInformationMessage(
-                            `Connected to ${server.name} successfully`
-                        )
-
                         // Update the server detail webview if it's open
                         if (ServerDetailWebview.currentPanel) {
                             ServerDetailWebview.currentPanel.update(server, true)
                         }
+
+                        // Refresh the server explorer to update the connection status
+                        serverExplorerProvider.refresh()
                     } else {
                         vscode.window.showErrorMessage(
                             `Failed to connect to ${server.name}: ${response.error}`
@@ -132,11 +129,7 @@ export function registerCommands(
                     // Disconnect from the server
                     const response = await disconnectFromServer(server.name)
 
-                    if (response.success) {
-                        vscode.window.showInformationMessage(
-                            `Disconnected from ${server.name} successfully`
-                        )
-                    } else {
+                    if (!response.success) {
                         vscode.window.showErrorMessage(
                             `Failed to disconnect from ${server.name}: ${response.error}`
                         )
@@ -146,6 +139,9 @@ export function registerCommands(
                     if (ServerDetailWebview.currentPanel) {
                         ServerDetailWebview.currentPanel.update(server, false)
                     }
+
+                    // Refresh the server explorer to update the connection status
+                    serverExplorerProvider.refresh()
                 }
             )
         }

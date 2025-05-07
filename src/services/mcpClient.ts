@@ -12,6 +12,15 @@ import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
 const activeClients: Record<string, Client> = {}
 
 /**
+ * Check if a server is connected
+ * @param serverName The name of the server
+ * @returns True if the server is connected, false otherwise
+ */
+export function isServerConnected(serverName: string): boolean {
+    return !!activeClients[serverName]
+}
+
+/**
  * Connect to an MCP server
  * @param server The server configuration
  * @returns A promise that resolves to an ApiResponse
@@ -148,10 +157,8 @@ export async function disconnectFromServer(serverName: string): Promise<ApiRespo
             }
         }
 
-        console.log(`Disconnecting from server: ${serverName}`)
         await client.close()
         delete activeClients[serverName]
-        console.log(`Disconnected from server: ${serverName}`)
 
         return {
             success: true,
