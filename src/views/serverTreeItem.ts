@@ -41,6 +41,13 @@ export class ServerTreeItem extends vscode.TreeItem {
 
         // Set the icon based on connection status
         this.iconPath = this.getIconPath();
+
+        // Set the command to execute when the item is clicked
+        this.command = {
+            command: 'mcp4humans.openServerDetail',
+            title: 'Open Server Detail',
+            arguments: [serverConfig]
+        };
     }
 
     /**

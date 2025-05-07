@@ -1,10 +1,11 @@
 /**
  * Commands module for the MCP4Humans extension
- * 
+ *
  * This module registers all the commands used by the extension.
  */
 import * as vscode from 'vscode';
 import { ServerExplorerProvider } from './views/serverExplorerProvider';
+import { ServerDetailWebview } from './webviews/serverDetailWebview';
 
 /**
  * Registers all commands for the extension
@@ -51,12 +52,28 @@ export function registerCommands(
         }
     );
 
+    // Register the open server detail command
+    const openServerDetailCommand = vscode.commands.registerCommand(
+        'mcp4humans.openServerDetail',
+        (server) => {
+            if (server) {
+                // Create or show the server detail webview
+                ServerDetailWebview.createOrShow(context.extensionUri, server, false);
+            }
+        }
+    );
+
     // Register the connect server command
     const connectServerCommand = vscode.commands.registerCommand(
         'mcp4humans.connectServer',
         (server) => {
             // This will be implemented in a later task
             vscode.window.showInformationMessage(`Connect server command triggered for ${server?.name || 'unknown'}`);
+
+            // Update the server detail webview if it's open
+            if (ServerDetailWebview.currentPanel && server) {
+                ServerDetailWebview.currentPanel.update(server, true);
+            }
         }
     );
 
@@ -66,6 +83,11 @@ export function registerCommands(
         (server) => {
             // This will be implemented in a later task
             vscode.window.showInformationMessage(`Disconnect server command triggered for ${server?.name || 'unknown'}`);
+
+            // Update the server detail webview if it's open
+            if (ServerDetailWebview.currentPanel && server) {
+                ServerDetailWebview.currentPanel.update(server, false);
+            }
         }
     );
 
@@ -75,6 +97,7 @@ export function registerCommands(
         addServerCommand,
         editServerCommand,
         deleteServerCommand,
+        openServerDetailCommand,
         connectServerCommand,
         disconnectServerCommand
     );
