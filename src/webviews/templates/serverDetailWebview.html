@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server: ${serverName}</title>
+    <style>
+        body {
+            font-family: var(--vscode-font-family);
+            font-size: var(--vscode-font-size);
+            color: var(--vscode-foreground);
+            background-color: var(--vscode-editor-background);
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .server-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .server-description {
+            font-size: 1em;
+            color: var(--vscode-descriptionForeground);
+            margin: 5px 0;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.connected {
+            background-color: var(--vscode-testing-iconPassed);
+        }
+
+        .status-indicator.disconnected {
+            background-color: var(--vscode-testing-iconQueued);
+        }
+
+        .status-text {
+            margin-right: 10px;
+        }
+
+        button {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 2px;
+            margin-right: 8px;
+        }
+
+        button:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: var(--vscode-editor-inactiveSelectionBackground);
+            border-radius: 4px;
+        }
+
+        .section-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .property {
+            margin-bottom: 8px;
+        }
+
+        .property-name {
+            font-weight: bold;
+        }
+
+        .tool-card {
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: var(--vscode-editor-selectionBackground);
+            border-radius: 4px;
+        }
+
+        .tool-name {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+
+        .tool-description {
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--vscode-progressBar-background);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .delete-button-div {
+            justify-content: flex-end;
+            display: flex;
+        }
+
+        .delete-button {
+            background-color: var(--vscode-errorForeground);
+            color: var(--vscode-button-foreground);
+        }
+
+        .delete-button:hover {
+            background-color: var(--vscode-testing-iconErrored);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--vscode-editor-background);
+            padding: 20px;
+            border-radius: 4px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .modal-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--vscode-errorForeground);
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div>
+            <h1 class="server-name">${serverName}</h1>
+            <p class="server-description">${serverDescription}</p>
+        </div>
+        <div class="connection-status">
+            <div class="status-indicator ${connectionStatusClass}"></div>
+            <span class="status-text">${connectionStatus}</span>
+            ${connectionButton}
+        </div>
+    </div>
+
+    ${serverDetails}
+
+    ${toolsSection}
+
+    <div class="delete-button-div">
+        <button id="delete-server-btn" class="delete-button">Delete Server</button>
+    </div>
+
+    <div id="delete-confirmation-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title">Delete Server</h2>
+            <p>Are you sure you want to delete the server "${serverName}"?</p>
+            <p>This action cannot be undone.</p>
+            <div class="modal-buttons">
+                <button id="cancel-delete-btn">Cancel</button>
+                <button id="confirm-delete-btn" class="delete-button">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+
+        // Handle connect/disconnect button clicks
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('connect-button')) {
+                vscode.postMessage({ command: 'connect' });
+            } else if (e.target.classList.contains('disconnect-button')) {
+                vscode.postMessage({ command: 'disconnect' });
+            } else if (e.target.id === 'edit-server-btn') {
+                vscode.postMessage({ command: 'editServer' });
+            } else if (e.target.id === 'delete-server-btn') {
+                // Show the delete confirmation modal
+                document.getElementById('delete-confirmation-modal').style.display = 'flex';
+            } else if (e.target.id === 'cancel-delete-btn') {
+                // Hide the delete confirmation modal
+                document.getElementById('delete-confirmation-modal').style.display = 'none';
+            } else if (e.target.id === 'confirm-delete-btn') {
+                // Hide the modal and send the delete command
+                document.getElementById('delete-confirmation-modal').style.display = 'none';
+                vscode.postMessage({ command: 'deleteServer' });
+            }
+        });
+    </script>
+</body>
+
+</html>

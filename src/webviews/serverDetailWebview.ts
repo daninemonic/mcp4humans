@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import { ServerConfig, Tool } from '../models/types'
 import { getToolsList } from '../services/mcpClient'
+import { getWebviewContent } from '../utils/webviewUtils'
 
 /**
  * Class that manages the server detail webview panel
@@ -124,6 +125,9 @@ export class ServerDetailWebview {
                     case 'editServer':
                         this._handleEditServer()
                         return
+                    case 'deleteServer':
+                        this._handleDeleteServer()
+                        return
                     case 'executeTool':
                         this._handleExecuteTool(message.toolName, message.params)
                         return
@@ -220,6 +224,14 @@ export class ServerDetailWebview {
     }
 
     /**
+     * Handle the delete server button click
+     */
+    private _handleDeleteServer(): void {
+        vscode.commands.executeCommand('mcp4humans.deleteServer', this._server)
+        this._panel.dispose()
+    }
+
+    /**
      * Handle the execute tool button click
      * @param toolName The name of the tool to execute
      * @param params The parameters for the tool
@@ -256,154 +268,24 @@ export class ServerDetailWebview {
         // Get the tools section
         const toolsSection = this._getToolsSectionHtml()
 
-        // Return the full HTML
-        return `
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Server: ${this._server.name}</title>
-                <style>
-                    body {
-                        font-family: var(--vscode-font-family);
-                        font-size: var(--vscode-font-size);
-                        color: var(--vscode-foreground);
-                        background-color: var(--vscode-editor-background);
-                        padding: 20px;
-                    }
-                    .header {
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        margin-bottom: 20px;
-                    }
-                    .server-name {
-                        font-size: 1.5em;
-                        font-weight: bold;
-                        margin: 0;
-                    }
-                    .server-description {
-                        font-size: 1em;
-                        color: var(--vscode-descriptionForeground);
-                        margin: 5px 0;
-                    }
-                    .connection-status {
-                        display: flex;
-                        align-items: center;
-                    }
-                    .status-indicator {
-                        width: 12px;
-                        height: 12px;
-                        border-radius: 50%;
-                        margin-right: 8px;
-                    }
-                    .status-indicator.connected {
-                        background-color: var(--vscode-testing-iconPassed);
-                    }
-                    .status-indicator.disconnected {
-                        background-color: var(--vscode-testing-iconQueued);
-                    }
-                    .status-text {
-                        margin-right: 10px;
-                    }
-                    button {
-                        background-color: var(--vscode-button-background);
-                        color: var(--vscode-button-foreground);
-                        border: none;
-                        padding: 6px 12px;
-                        cursor: pointer;
-                        border-radius: 2px;
-                    }
-                    button:hover {
-                        background-color: var(--vscode-button-hoverBackground);
-                    }
-                    .section {
-                        margin-bottom: 20px;
-                        padding: 15px;
-                        background-color: var(--vscode-editor-inactiveSelectionBackground);
-                        border-radius: 4px;
-                    }
-                    .section-title {
-                        font-size: 1.2em;
-                        font-weight: bold;
-                        margin-top: 0;
-                        margin-bottom: 10px;
-                    }
-                    .property {
-                        margin-bottom: 8px;
-                    }
-                    .property-name {
-                        font-weight: bold;
-                    }
-                    .tool-card {
-                        margin-bottom: 15px;
-                        padding: 15px;
-                        background-color: var(--vscode-editor-selectionBackground);
-                        border-radius: 4px;
-                    }
-                    .tool-name {
-                        font-size: 1.1em;
-                        font-weight: bold;
-                        margin-top: 0;
-                        margin-bottom: 5px;
-                    }
-                    .tool-description {
-                        margin-bottom: 10px;
-                    }
-                    .loading {
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        height: 100px;
-                    }
-                    .spinner {
-                        border: 4px solid rgba(0, 0, 0, 0.1);
-                        border-left-color: var(--vscode-progressBar-background);
-                        border-radius: 50%;
-                        width: 30px;
-                        height: 30px;
-                        animation: spin 1s linear infinite;
-                    }
-                    @keyframes spin {
-                        to { transform: rotate(360deg); }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <div>
-                        <h1 class="server-name">${this._server.name}</h1>
-                        <p class="server-description">${this._server.description || ''}</p>
-                    </div>
-                    <div class="connection-status">
-                        <div class="status-indicator ${connectionStatusClass}"></div>
-                        <span class="status-text">${connectionStatus}</span>
-                        ${connectionButton}
-                    </div>
-                </div>
+        // Prepare replacements for the template
+        const replacements: Record<string, string> = {
+            serverName: this._server.name,
+            serverDescription: this._server.description || '',
+            connectionStatus: connectionStatus,
+            connectionStatusClass: connectionStatusClass,
+            connectionButton: connectionButton,
+            serverDetails: serverDetails,
+            toolsSection: toolsSection,
+        }
 
-                ${serverDetails}
-
-                ${toolsSection}
-
-                <script>
-                    const vscode = acquireVsCodeApi();
-
-                    // Handle connect/disconnect button clicks
-                    document.addEventListener('click', (e) => {
-                        if (e.target.classList.contains('connect-button')) {
-                            vscode.postMessage({ command: 'connect' });
-                        } else if (e.target.classList.contains('disconnect-button')) {
-                            vscode.postMessage({ command: 'disconnect' });
-                        } else if (e.target.id === 'edit-server-btn') {
-                            vscode.postMessage({ command: 'editServer' });
-                        }
-                    });
-                </script>
-            </body>
-            </html>
-        `
+        // Get the HTML content using the template
+        return getWebviewContent(
+            this._panel.webview,
+            this._extensionUri,
+            'src/webviews/templates/serverDetailWebview.html',
+            replacements
+        )
     }
 
     /**
