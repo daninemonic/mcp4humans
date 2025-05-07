@@ -5,8 +5,7 @@
  */
 import * as vscode from 'vscode';
 import { ServerTreeItem } from './serverTreeItem';
-import { ServerConfig } from '../models/types';
-import { getServers } from '../utils/storage';
+import { getServers } from '../services/storage';
 
 /**
  * Provider for the Server Explorer tree view
