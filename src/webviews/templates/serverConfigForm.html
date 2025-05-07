@@ -163,10 +163,25 @@
         td {
             padding: 8px;
             text-align: left;
-            border-bottom: 1px solid var(--vscode-panel-border);
         }
 
         th {
+            border-bottom: 1px solid var(--vscode-panel-border);
+        }
+
+        .trash-icon {
+            cursor: pointer;
+            color: var(--vscode-errorForeground);
+            font-size: 14px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+        }
+
+        .trash-icon:hover {
             background-color: var(--vscode-editor-selectionBackground);
         }
     </style>
@@ -242,7 +257,7 @@
                     <tr>
                         <th>Name</th>
                         <th>Value</th>
-                        <th>Action</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody id="env-vars-body">
@@ -269,7 +284,7 @@
                     <tr>
                         <th>Name</th>
                         <th>Value</th>
-                        <th>Action</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody id="headers-body">
@@ -317,7 +332,7 @@
             row.innerHTML = `
                 <td><input type="text" class="env-name" /></td>
                 <td><input type="text" class="env-value" /></td>
-                <td><button class="remove-env-btn">Remove</button></td>
+                <td><div class="trash-icon remove-env-btn">🗑️</div></td>
             `;
             tbody.appendChild(row);
 
@@ -334,7 +349,7 @@
             row.innerHTML = `
                 <td><input type="text" class="header-name" /></td>
                 <td><input type="text" class="header-value" /></td>
-                <td><button class="remove-header-btn">Remove</button></td>
+                <td><div class="trash-icon remove-header-btn">🗑️</div></td>
             `;
             tbody.appendChild(row);
 

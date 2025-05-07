@@ -300,7 +300,7 @@ export class ServerConfigForm {
                     <tr>
                         <td><input type="text" class="env-name" value="${key}" /></td>
                         <td><input type="text" class="env-value" value="${value}" /></td>
-                        <td><button class="remove-env-btn">Remove</button></td>
+                        <td><div class="trash-icon remove-env-btn">🗑️</div></td>
                     </tr>
                 `
                 )
@@ -316,7 +316,7 @@ export class ServerConfigForm {
                     <tr>
                         <td><input type="text" class="header-name" value="${key}" /></td>
                         <td><input type="text" class="header-value" value="${value}" /></td>
-                        <td><button class="remove-header-btn">Remove</button></td>
+                        <td><div class="trash-icon remove-header-btn">🗑️</div></td>
                     </tr>
                 `
                 )
