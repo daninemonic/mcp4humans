@@ -48,7 +48,7 @@ tasks:
 - task_id: SETUP-ENV-001
   group: Setup
   subgroup: Environment
-  status: pending
+  status: in_progress
   title: Review VSCode Extension Project
   description: A new VSCode extension project has been created using Yeoman generator
     under mcp4humans/. Review the basic extension structure, made for TypeScript support,

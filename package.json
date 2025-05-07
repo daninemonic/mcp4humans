@@ -3,21 +3,121 @@
     "displayName": "MCP4Humans",
     "description": "MCP Client UI made for humans to easily interact with MCP servers",
     "version": "0.0.1",
+    "publisher": "modelcontextprotocol",
     "engines": {
         "vscode": "^1.99.0"
     },
     "categories": [
-        "Other"
+        "Other",
+        "Visualization",
+        "Testing"
     ],
+    "keywords": [
+        "mcp",
+        "model-context-protocol",
+        "mcp-client",
+        "ai",
+        "tools"
+    ],
+    "icon": "resources/mcp4humans-icon.png",
     "activationEvents": [],
     "main": "./dist/extension.js",
     "contributes": {
         "commands": [
             {
-                "command": "mcp4humans.helloWorld",
-                "title": "Hello World"
+                "command": "mcp4humans.refreshServerList",
+                "title": "Refresh",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "mcp4humans.addServer",
+                "title": "Add Server",
+                "icon": "$(add)"
+            },
+            {
+                "command": "mcp4humans.editServer",
+                "title": "Edit Server",
+                "icon": "$(edit)"
+            },
+            {
+                "command": "mcp4humans.deleteServer",
+                "title": "Delete Server",
+                "icon": "$(trash)"
+            },
+            {
+                "command": "mcp4humans.connectServer",
+                "title": "Connect to Server",
+                "icon": "$(plug)"
+            },
+            {
+                "command": "mcp4humans.disconnectServer",
+                "title": "Disconnect from Server",
+                "icon": "$(debug-disconnect)"
             }
-        ]
+        ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "mcp4humans-explorer",
+                    "title": "MCP4Humans",
+                    "icon": "resources/mcp4humans-icon.svg"
+                }
+            ]
+        },
+        "views": {
+            "mcp4humans-explorer": [
+                {
+                    "id": "mcp4humans.serverExplorer",
+                    "name": "MCP Servers"
+                }
+            ]
+        },
+        "menus": {
+            "view/title": [
+                {
+                    "command": "mcp4humans.refreshServerList",
+                    "when": "view == mcp4humans.serverExplorer",
+                    "group": "navigation"
+                },
+                {
+                    "command": "mcp4humans.addServer",
+                    "when": "view == mcp4humans.serverExplorer",
+                    "group": "navigation"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "mcp4humans.editServer",
+                    "when": "view == mcp4humans.serverExplorer && viewItem == server",
+                    "group": "inline"
+                },
+                {
+                    "command": "mcp4humans.deleteServer",
+                    "when": "view == mcp4humans.serverExplorer && viewItem == server",
+                    "group": "inline"
+                },
+                {
+                    "command": "mcp4humans.connectServer",
+                    "when": "view == mcp4humans.serverExplorer && viewItem == disconnected",
+                    "group": "inline"
+                },
+                {
+                    "command": "mcp4humans.disconnectServer",
+                    "when": "view == mcp4humans.serverExplorer && viewItem == connected",
+                    "group": "inline"
+                }
+            ]
+        },
+        "configuration": {
+            "title": "MCP4Humans",
+            "properties": {
+                "mcp4humans.servers": {
+                    "type": "array",
+                    "default": [],
+                    "description": "List of configured MCP servers"
+                }
+            }
+        }
     },
     "scripts": {
         "vscode:prepublish": "npm run package",
@@ -33,6 +133,9 @@
         "lint": "eslint src",
         "test": "vscode-test"
     },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.11.0"
+    },
     "devDependencies": {
         "@types/vscode": "^1.99.0",
         "@types/mocha": "^10.0.10",
@@ -44,6 +147,7 @@
         "npm-run-all": "^4.1.5",
         "typescript": "^5.8.2",
         "@vscode/test-cli": "^0.0.10",
-        "@vscode/test-electron": "^2.4.1"
+        "@vscode/test-electron": "^2.4.1",
+        "prettier": "^3.2.5"
     }
 }
