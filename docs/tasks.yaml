@@ -254,11 +254,21 @@ tasks:
 - task_id: UI-COMP-001
   group: UI
   subgroup: Components
-  status: pending
+  status: in_progress
   title: Implement Server Configuration Form
   description: Create a form component for adding and editing server configurations.
     This should include fields for server name, description, transport type (STDIO
-    or SSE), and the respective configuration options. Use mock data initially.
+    or SSE), and the respective configuration options. Use mock data initially. The
+    server add is triggered by the + button in the Server title bar (already exists).
+    The server edit trigger needs to be added. Currently the server details view has
+    a card for server connection details and another one for tools. We're going to
+    add a "Edit" button in the server connection details card at the bottom right
+    corner, so that it can be edited. Both add and edit will open the same form. Add
+    with empty values and edit with the server's pre-populated values. The from has
+    the JSON config paste box at the top for importing a config and below the individual
+    fields. (same as electron app). At the bottom there's a "Connect" button to test
+    the connection. For add or edit to succeed the server connect must work and tools
+    read must work. After add or edit we will leave the server in connected state.'
   specs:
     section: ConfigForm
     lines: 225-255
