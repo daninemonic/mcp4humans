@@ -1,11 +1,12 @@
 /**
  * Server Explorer Provider
- * 
+ *
  * This class provides the data for the Server Explorer tree view.
  */
 import * as vscode from 'vscode';
 import { ServerTreeItem } from './serverTreeItem';
 import { ServerConfig } from '../models/types';
+import { getServers } from '../utils/storage';
 
 /**
  * Provider for the Server Explorer tree view
@@ -24,7 +25,7 @@ export class ServerExplorerProvider implements vscode.TreeDataProvider<ServerTre
      * Refresh the tree view
      */
     refresh(): void {
-        this._onDidChangeTreeData.fire();
+        this._onDidChangeTreeData.fire(undefined);
     }
 
     /**
@@ -48,7 +49,7 @@ export class ServerExplorerProvider implements vscode.TreeDataProvider<ServerTre
             return Promise.resolve([]);
         } else {
             // If we don't have an element, we're looking for the root items
-            return Promise.resolve(this.getServers());
+            return this.getServers();
         }
     }
 
@@ -56,35 +57,24 @@ export class ServerExplorerProvider implements vscode.TreeDataProvider<ServerTre
      * Get the servers from storage
      * @returns The servers as tree items
      */
-    private getServers(): ServerTreeItem[] {
-        // For now, return mock data
-        // This will be replaced with real storage in a later task
-        const mockServers: ServerConfig[] = [
-            {
-                name: 'Mock STDIO Server',
-                description: 'A mock STDIO server for testing',
-                transportType: 'stdio',
-                stdioConfig: {
-                    cmd: 'python',
-                    args: ['-m', 'mcp_server'],
-                    cwd: '/path/to/server'
-                }
-            },
-            {
-                name: 'Mock SSE Server',
-                description: 'A mock SSE server for testing',
-                transportType: 'sse',
-                sseConfig: {
-                    url: 'http://localhost:8000/sse'
-                }
-            }
-        ];
+    private async getServers(): Promise<ServerTreeItem[]> {
+        // Get servers from storage utility
+        const response = await getServers(this.context);
 
-        return mockServers.map(server => new ServerTreeItem(
+        if (!response.success || !response.data) {
+            // If there was an error, show it and return an empty array
+            if (response.error) {
+                vscode.window.showErrorMessage(`Failed to get servers: ${response.error}`);
+            }
+            return [];
+        }
+
+        // Map the servers to tree items
+        return response.data.map(server => new ServerTreeItem(
             server.name,
             server.description || '',
             server.transportType,
-            false, // isConnected
+            false, // isConnected - we'll implement real connection status later
             server
         ));
     }

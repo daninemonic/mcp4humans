@@ -115,7 +115,7 @@ tasks:
 - task_id: UI-VIEWS-001
   group: UI
   subgroup: Views
-  status: pending
+  status: done
   title: Create Server Explorer View
   description: Implement a custom tree view in the Activity Bar or Explorer that displays
     the list of configured MCP servers. This is equivalent to the ServerList component
@@ -165,10 +165,19 @@ tasks:
     description: VSCode Tree View API
   depends_on:
   - SETUP-PROJ-001
+  completed:
+    timestamp: '2025-05-07 12:51:15'
+    complies_to_specs: true
+    tested: true
+    notes: Completed the Server Explorer View implementation. Created the ServerExplorerProvider
+      class that displays the list of configured MCP servers in a tree view. The provider
+      gets server data from the storage utility, which now contains mock data based
+      on the schema example. This separation will make it easier to replace the mock
+      data with real storage later.
 - task_id: UI-VIEWS-002
   group: UI
   subgroup: Views
-  status: pending
+  status: in_progress
   title: Create Server Detail Webview
   description: Implement a webview panel that displays the details of a selected server,
     including its configuration and tools. This will be shown when a server is clicked
