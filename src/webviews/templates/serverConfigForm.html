@@ -252,7 +252,7 @@
         </div>
         <div class="form-group">
             <label>Environment Variables</label>
-            <table id="env-vars-table">
+            <table id="env-vars-table" class="hidden">
                 <thead>
                     <tr>
                         <th>Name</th>
@@ -279,7 +279,7 @@
         </div>
         <div class="form-group">
             <label>Headers</label>
-            <table id="headers-table">
+            <table id="headers-table" class="hidden">
                 <thead>
                     <tr>
                         <th>Name</th>
@@ -307,6 +307,21 @@
     <script>
         const vscode = acquireVsCodeApi();
 
+        // Initialize tables visibility
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if there are any environment variables
+            const envVarsBody = document.getElementById('env-vars-body');
+            if (envVarsBody && envVarsBody.children.length > 0) {
+                document.getElementById('env-vars-table').classList.remove('hidden');
+            }
+
+            // Check if there are any headers
+            const headersBody = document.getElementById('headers-body');
+            if (headersBody && headersBody.children.length > 0) {
+                document.getElementById('headers-table').classList.remove('hidden');
+            }
+        });
+
         // Get form elements
         const transportRadios = document.querySelectorAll('input[name="transport-type"]');
         const stdioConfig = document.getElementById('stdio-config');
@@ -327,6 +342,12 @@
 
         // Add environment variable
         document.getElementById('add-env-var-btn').addEventListener('click', () => {
+            // Show the table if it's hidden
+            const table = document.getElementById('env-vars-table');
+            if (table.classList.contains('hidden')) {
+                table.classList.remove('hidden');
+            }
+
             const tbody = document.getElementById('env-vars-body');
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -339,11 +360,22 @@
             // Add event listener to the new remove button
             row.querySelector('.remove-env-btn').addEventListener('click', () => {
                 row.remove();
+
+                // Hide the table if there are no more rows
+                if (tbody.children.length === 0) {
+                    table.classList.add('hidden');
+                }
             });
         });
 
         // Add header
         document.getElementById('add-header-btn').addEventListener('click', () => {
+            // Show the table if it's hidden
+            const table = document.getElementById('headers-table');
+            if (table.classList.contains('hidden')) {
+                table.classList.remove('hidden');
+            }
+
             const tbody = document.getElementById('headers-body');
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -356,19 +388,42 @@
             // Add event listener to the new remove button
             row.querySelector('.remove-header-btn').addEventListener('click', () => {
                 row.remove();
+
+                // Hide the table if there are no more rows
+                if (tbody.children.length === 0) {
+                    table.classList.add('hidden');
+                }
             });
         });
 
         // Add event listeners to existing remove buttons
         document.querySelectorAll('.remove-env-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                btn.closest('tr').remove();
+                const row = btn.closest('tr');
+                const tbody = row.parentElement;
+                const table = tbody.closest('table');
+
+                row.remove();
+
+                // Hide the table if there are no more rows
+                if (tbody.children.length === 0) {
+                    table.classList.add('hidden');
+                }
             });
         });
 
         document.querySelectorAll('.remove-header-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                btn.closest('tr').remove();
+                const row = btn.closest('tr');
+                const tbody = row.parentElement;
+                const table = tbody.closest('table');
+
+                row.remove();
+
+                // Hide the table if there are no more rows
+                if (tbody.children.length === 0) {
+                    table.classList.add('hidden');
+                }
             });
         });
 

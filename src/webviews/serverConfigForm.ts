@@ -290,10 +290,13 @@ export class ServerConfigForm {
 
         // Generate environment variables HTML
         let stdioEnvVars = ''
+        let hasEnvVars = false
         if (
             defaultServer.stdioConfig?.environment &&
-            typeof defaultServer.stdioConfig.environment === 'object'
+            typeof defaultServer.stdioConfig.environment === 'object' &&
+            Object.keys(defaultServer.stdioConfig.environment).length > 0
         ) {
+            hasEnvVars = true
             stdioEnvVars = Object.entries(defaultServer.stdioConfig.environment)
                 .map(
                     ([key, value]) => `
@@ -309,7 +312,12 @@ export class ServerConfigForm {
 
         // Generate headers HTML
         let sseHeaders = ''
-        if (defaultServer.sseConfig?.headers) {
+        let hasHeaders = false
+        if (
+            defaultServer.sseConfig?.headers &&
+            Object.keys(defaultServer.sseConfig.headers).length > 0
+        ) {
+            hasHeaders = true
             sseHeaders = Object.entries(defaultServer.sseConfig.headers)
                 .map(
                     ([key, value]) => `
@@ -336,8 +344,10 @@ export class ServerConfigForm {
             stdioArgs: defaultServer.stdioConfig?.args?.join(',') || '',
             stdioCwd: defaultServer.stdioConfig?.cwd || '',
             stdioEnvVars: stdioEnvVars,
+            hasEnvVars: hasEnvVars ? 'true' : 'false',
             sseUrl: defaultServer.sseConfig?.url || '',
             sseHeaders: sseHeaders,
+            hasHeaders: hasHeaders ? 'true' : 'false',
             nameError: this._validationErrors.name
                 ? `<div class="error">${this._validationErrors.name}</div>`
                 : '',
