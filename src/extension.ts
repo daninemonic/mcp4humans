@@ -1,26 +1,38 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
+/**
+ * MCP4Humans VSCode Extension
+ *
+ * This extension provides a user interface for interacting with MCP (Model Context Protocol) servers,
+ * similar to the MCP4Humans Electron application.
+ */
 import * as vscode from 'vscode';
+import { registerCommands } from './commands';
+import { ServerExplorerProvider } from './views/serverExplorerProvider';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+/**
+ * Activates the extension
+ * @param context The extension context
+ */
+export function activate(context: vscode.ExtensionContext): void {
+	console.log('MCP4Humans extension is now active');
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "mcp4humans" is now active!');
-
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('mcp4humans.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from MCP4Humans!');
+	// Register the ServerExplorerProvider
+	const serverExplorerProvider = new ServerExplorerProvider(context);
+	const serverExplorerView = vscode.window.createTreeView('mcp4humans.serverExplorer', {
+		treeDataProvider: serverExplorerProvider,
+		showCollapseAll: false
 	});
 
-	context.subscriptions.push(disposable);
+	// Register commands
+	registerCommands(context, serverExplorerProvider);
+
+	// Add disposables to context
+	context.subscriptions.push(serverExplorerView);
 }
 
-// This method is called when your extension is deactivated
-export function deactivate() {}
+/**
+ * Deactivates the extension
+ */
+export function deactivate(): void {
+	// Clean up resources when the extension is deactivated
+	console.log('MCP4Humans extension is now deactivated');
+}

@@ -48,7 +48,7 @@ tasks:
 - task_id: SETUP-ENV-001
   group: Setup
   subgroup: Environment
-  status: in_progress
+  status: done
   title: Review VSCode Extension Project
   description: A new VSCode extension project has been created using Yeoman generator
     under mcp4humans/. Review the basic extension structure, made for TypeScript support,
@@ -72,10 +72,17 @@ tasks:
   - url: https://code.visualstudio.com/api/get-started/your-first-extension
     description: VSCode Extension Development Guide
   depends_on: []
+  completed:
+    timestamp: '2025-05-07 12:14:09'
+    complies_to_specs: true
+    tested: true
+    notes: Completed the setup of the VSCode extension project. Updated package.json
+      with necessary metadata, commands, views, and dependencies. Created the folder
+      structure for the project and added the MCP4Humans icon.
 - task_id: SETUP-PROJ-001
   group: Setup
   subgroup: Project Structure
-  status: pending
+  status: done
   title: Define Extension Architecture
   description: Define the architecture for the VSCode extension based on the Electron
     app's structure. Create the folder structure for views, components, models, and
@@ -96,6 +103,15 @@ tasks:
       \ Main application component\n   - `index.tsx`: React entry point"
   depends_on:
   - SETUP-ENV-001
+  completed:
+    timestamp: '2025-05-07 12:23:12'
+    complies_to_specs: true
+    tested: true
+    notes: Completed the architecture definition for the VSCode extension. Created
+      the folder structure and skeleton files for views, models, and utilities. Set
+      up the extension activation and deactivation lifecycle hooks. All files have
+      proper JSDoc comments and TypeScript type annotations. The code compiles successfully
+      with no type errors or linting issues.
 - task_id: UI-VIEWS-001
   group: UI
   subgroup: Views
