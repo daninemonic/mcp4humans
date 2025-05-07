@@ -175,7 +175,7 @@
         <div class="form-group">
             <label for="json-config">Paste JSON Configuration</label>
             <textarea id="json-config" class="json-input"
-                placeholder='{"name": "server-name", "transportType": "stdio", "stdioConfig": {"cmd": "python", "args": ["-m", "server"]}}'
+                placeholder='{"mcpServers":{"server-name":{"cmd": "npx","args":["-y", "@package"]}}}'
                 rows="10"></textarea>
         </div>
         <div style="text-align: right;">
@@ -221,7 +221,7 @@
             ${stdioCmdError}
         </div>
         <div class="form-group">
-            <label for="stdio-args">Arguments (comma-separated)</label>
+            <label for="stdio-args">Arguments (comma separated)<span class="required">*</span></label>
             <input type="text" id="stdio-args" value="${stdioArgs}" />
         </div>
         <div class="form-group">

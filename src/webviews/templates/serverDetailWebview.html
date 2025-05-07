@@ -186,8 +186,7 @@
         }
 
         .result-container {
-            margin-top: 15px;
-            border-top: 1px solid var(--vscode-panel-border);
+            margin-top: 5px;
             padding-top: 15px;
         }
 
@@ -214,19 +213,19 @@
             align-items: center;
         }
 
-        .result-status-icon {
-            margin-right: 8px;
-        }
+        .result-status-icon {}
 
-        .result-status-text {
-            font-weight: bold;
-        }
+        .result-status-text {}
 
         .result-status-text.success {
+            font-weight: bold;
+            margin: 2px;
             color: var(--vscode-testing-iconPassed);
         }
 
         .result-status-text.error {
+            font-weight: bold;
+            margin: 2px;
             color: var(--vscode-errorForeground);
         }
 
@@ -277,8 +276,8 @@
 
         .loading-spinner {
             display: inline-block;
-            width: 16px;
-            height: 16px;
+            width: 10px;
+            height: 10px;
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: var(--vscode-progressBar-background);
@@ -509,9 +508,13 @@
                 const loadingSpinner = form.querySelector('.loading-spinner');
                 const buttonText = form.querySelector('.button-text');
 
+                const toolCard = document.getElementById(`tool-${toolName}`);
+                const resultContainer = toolCard.querySelector('.result-container');
+
                 sendButton.disabled = true;
                 loadingSpinner.classList.remove('hidden');
-                buttonText.textContent = 'Executing...';
+                resultContainer.classList.add('hidden');
+                buttonText.textContent = 'Sending...';
 
                 // Send message to execute tool
                 vscode.postMessage({
@@ -560,6 +563,7 @@
                 // Update the header
                 resultHeader.className = 'result-header ' + (success ? 'success' : 'error');
                 resultStatusIcon.textContent = success ? '✓' : '✗';
+                resultStatusIcon.className = 'result-status-text ' + (success ? 'success' : 'error');
                 resultStatusText.textContent = success ? 'Success' : 'Error';
                 resultStatusText.className = 'result-status-text ' + (success ? 'success' : 'error');
 
