@@ -98,13 +98,11 @@
                 },
                 {
                     "command": "mcp4humans.connectServer",
-                    "when": "view == mcp4humans.serverExplorer && viewItem == disconnected",
-                    "group": "inline"
+                    "when": "view == mcp4humans.serverExplorer && viewItem == disconnected"
                 },
                 {
                     "command": "mcp4humans.disconnectServer",
-                    "when": "view == mcp4humans.serverExplorer && viewItem == connected",
-                    "group": "inline"
+                    "when": "view == mcp4humans.serverExplorer && viewItem == connected"
                 }
             ]
         },

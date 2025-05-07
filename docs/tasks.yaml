@@ -254,7 +254,7 @@ tasks:
 - task_id: UI-COMP-001
   group: UI
   subgroup: Components
-  status: in_progress
+  status: done
   title: Implement Server Configuration Form
   description: Create a form component for adding and editing server configurations.
     This should include fields for server name, description, transport type (STDIO
@@ -285,6 +285,18 @@ tasks:
       \ headers"
   depends_on:
   - UI-VIEWS-002
+  completed:
+    timestamp: '2025-05-07 14:01:25'
+    complies_to_specs: true
+    tested: true
+    notes: Completed the Server Configuration Form implementation. Created a webview
+      panel for adding and editing server configurations. The form includes fields
+      for server name, description, transport type (STDIO or SSE), and the respective
+      configuration options. It supports real-time validation, conditional rendering
+      based on transport type, and adding/removing environment variables and headers.
+      The form can be opened from the "Add Server" button in the Server Explorer or
+      the "Edit" button in the Server Detail view. The form also includes a JSON input
+      section for importing configurations.
 - task_id: UI-COMP-002
   group: UI
   subgroup: Components
