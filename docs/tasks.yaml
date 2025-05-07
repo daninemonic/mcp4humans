@@ -1,0 +1,545 @@
+project:
+  name: mcp4humans
+  description: MCP Client UI made for humans to easily interact with MCP servers
+  version: '0.1'
+  created_at: '2025-04-07'
+  created_from: /Users/daniel/workspace/mcp/my-mcp-servers/mcp4humans/docs/MCP4Humans.md
+coding_rules: 'language: "TypeScript"
+
+  documentation: "Add JSDoc comments to all file headers, classes, interfaces, and
+  methods"
+
+  type_hints: "Use TypeScript interfaces and types for all variables, parameters,
+  and return values"
+
+  error_handling: "Implement robust error handling with informative error messages"
+
+  testing: "Implement unit tests for core functionality"
+
+  maintainability: "Ensure code is modular and easy to maintain"
+
+  ui_first: "Implement UI components with mock data first, then add real functionality"
+
+  vscode_patterns: "Follow VSCode extension development patterns and guidelines"
+
+  compatibility: "Ensure compatibility with the Electron version''s functionality
+  and user experience"
+
+  '
+structure:
+- group: Setup
+  subgroups:
+  - Environment
+  - Project Structure
+- group: UI
+  subgroups:
+  - Views
+  - Components
+  - Theming
+- group: Storage
+  subgroups:
+  - Models
+  - Persistence
+- group: MCP
+  subgroups:
+  - Client
+  - Integration
+tasks:
+- task_id: SETUP-ENV-001
+  group: Setup
+  subgroup: Environment
+  status: pending
+  title: Review VSCode Extension Project
+  description: A new VSCode extension project has been created using Yeoman generator
+    under mcp4humans/. Review the basic extension structure, made for TypeScript support,
+    esbuild bundler and npm package manager. Review the package.json has appropriate
+    metadata, dependencies, and extension points. Add supporting packages such as
+    prettier, eslint, etc. as needed
+  specs:
+    section: VSCode Extension Considerations
+    lines: 489-508
+    content: "## VSCode Extension Considerations\n\nWhen implementing the VSCode extension\
+      \ version of MCP4Humans, consider the following:\n\n### Integration Points\n\
+      \n1. **VSCode Extension API**\n   - Use VSCode's extension API instead of Electron\n\
+      \   - Leverage VSCode's UI components (webviews, panels, tree views)\n   - Use\
+      \ VSCode's storage API for persistence\n\n2. **UI Adaptation**\n   - VSCode\
+      \ has its own theming system - adapt the MCP4Humans theme to match\n   - Use\
+      \ VSCode's built-in icons where appropriate\n   - Follow VSCode's UI patterns\
+      \ and guidelines\n\n3. **State Management**\n   - VSCode extensions have their\
+      \ own lifecycle\n   - Consider using the Memento API for persistent storage\n\
+      \   - Handle extension activation/deactivation properly"
+  references:
+  - url: https://code.visualstudio.com/api/get-started/your-first-extension
+    description: VSCode Extension Development Guide
+  depends_on: []
+- task_id: SETUP-PROJ-001
+  group: Setup
+  subgroup: Project Structure
+  status: pending
+  title: Define Extension Architecture
+  description: Define the architecture for the VSCode extension based on the Electron
+    app's structure. Create the folder structure for views, components, models, and
+    utilities. Set up the extension activation and deactivation lifecycle hooks. Do
+    not implement code in this task, just setup skeleton.
+  specs:
+    section: Architecture
+    lines: 396-413
+    content: "\nThe MCP4Humans application follows a clear separation of concerns:\n\
+      \n1. **Electron Main Process** (`electron/` directory)\n   - `main.ts`: Application\
+      \ entry point and window management\n   - `mcpClient.ts`: MCP client implementation\
+      \ using the MCP SDK\n   - `ipc.ts`: IPC (Inter-Process Communication) setup\n\
+      \   - `schema.ts`: Server JSON schema definitions\n   - `storage.ts`: Server\
+      \ configuration storage\n   - `preload.ts`: Preload script for secure IPC\n\n\
+      2. **React Renderer Process** (`src/` directory)\n   - `api/`: Connects React\
+      \ to Electron IPC\n   - `components/`: Reusable UI components\n   - `models/`:\
+      \ TypeScript interfaces and types\n   - `styles/`: CSS files\n   - `App.tsx`:\
+      \ Main application component\n   - `index.tsx`: React entry point"
+  depends_on:
+  - SETUP-ENV-001
+- task_id: UI-VIEWS-001
+  group: UI
+  subgroup: Views
+  status: pending
+  title: Create Server Explorer View
+  description: Implement a custom tree view in the Activity Bar or Explorer that displays
+    the list of configured MCP servers. This is equivalent to the ServerList component
+    in the Electron app. Use mock data to display server items with their connection
+    status. Do not worry about real functionality or APIs yet. Just use hard-coded
+    data for now based on the schemas.
+  specs:
+    section: ServerList
+    lines: 155-174
+    content: '### ServerList
+
+
+      The main component that displays all configured servers and provides an "Add
+      Server" card.
+
+
+      **Visual Characteristics:**
+
+
+      - Container with maximum width (md = medium in MUI)
+
+      - Minimum width of 480px
+
+      - Vertical list of server cards
+
+      - "Add Server" card at the bottom
+
+      - Loading spinner when fetching servers
+
+      - Error alert when server loading fails
+
+      - Empty state message when no servers are configured
+
+
+      **Functionality:**
+
+
+      - Loads the list of servers on mount
+
+      - Handles adding, editing, and deleting servers
+
+      - Manages server connections
+
+      - Displays snackbar notifications for operations'
+  references:
+  - url: https://code.visualstudio.com/api/extension-guides/tree-view
+    description: VSCode Tree View API
+  depends_on:
+  - SETUP-PROJ-001
+- task_id: UI-VIEWS-002
+  group: UI
+  subgroup: Views
+  status: pending
+  title: Create Server Detail Webview
+  description: Implement a webview panel that displays the details of a selected server,
+    including its configuration and tools. This will be shown when a server is clicked
+    in the Server Explorer. Use mock data.
+  specs:
+    section: ServerCard
+    lines: 176-204
+    content: '### ServerCard
+
+
+      Displays an individual server with its connection status and provides actions.
+
+
+      **Visual Characteristics:**
+
+
+      - Card with outlined variant
+
+      - Connection status indicator (red/yellow/green dot)
+
+      - Server name as title
+
+      - Server description as subtitle
+
+      - Transport type chip (STDIO or SSE)
+
+      - Edit and Delete action buttons
+
+      - Expandable content area for tools
+
+      - Visual hierarchy with nested cards using darker backgrounds
+
+
+      **States:**
+
+
+      - Disconnected (red indicator)
+
+      - Connecting (yellow indicator)
+
+      - Connected (green indicator)
+
+      - Expanded/Collapsed
+
+      - Edit mode
+
+
+      **Functionality:**
+
+
+      - Click to connect/expand
+
+      - Edit button to modify server configuration
+
+      - Delete button with confirmation dialog
+
+      - Displays tools when connected and expanded'
+  references:
+  - url: https://code.visualstudio.com/api/extension-guides/webview
+    description: VSCode Webview API
+  depends_on:
+  - UI-VIEWS-001
+- task_id: UI-COMP-001
+  group: UI
+  subgroup: Components
+  status: pending
+  title: Implement Server Configuration Form
+  description: Create a form component for adding and editing server configurations.
+    This should include fields for server name, description, transport type (STDIO
+    or SSE), and the respective configuration options. Use mock data initially.
+  specs:
+    section: ConfigForm
+    lines: 225-255
+    content: "### ConfigForm\n\nForm for creating or editing server configurations.\n\
+      \n**Visual Characteristics:**\n\n- Grouped fields with section headings\n- Required\
+      \ field indicators\n- Validation error messages\n- Radio buttons for transport\
+      \ type selection\n- Conditional fields based on transport type\n- Tables for\
+      \ environment variables and headers\n\n**Sections:**\n\n1. Basic Information\
+      \ (name, description)\n2. Transport Type (STDIO or SSE)\n3. STDIO Configuration\
+      \ (when STDIO selected)\n   - Command\n   - Arguments\n   - Working Directory\n\
+      \   - Environment Variables\n4. SSE Configuration (when SSE selected)\n   -\
+      \ URL\n   - Headers\n\n**Functionality:**\n\n- Real-time validation\n- Conditional\
+      \ rendering based on transport type\n- Add/remove environment variables and\
+      \ headers"
+  depends_on:
+  - UI-VIEWS-002
+- task_id: UI-COMP-002
+  group: UI
+  subgroup: Components
+  status: pending
+  title: Implement JSON Input Component
+  description: Create a component for pasting and parsing JSON server configurations.
+    This should include a text area with monospace font and a button to parse the
+    JSON into the form fields.
+  specs:
+    section: JsonInput
+    lines: 257-273
+    content: '### JsonInput
+
+
+      Text area for pasting JSON configurations.
+
+
+      **Visual Characteristics:**
+
+
+      - Monospace font for better JSON readability
+
+      - Multi-line text area (10 rows)
+
+      - Error highlighting
+
+      - "Parse JSON" button aligned to the right
+
+
+      **Functionality:**
+
+
+      - Accepts JSON input
+
+      - Parses and validates JSON on button click
+
+      - Shows error messages for invalid JSON
+
+      - Updates the form fields when valid JSON is parsed'
+  depends_on:
+  - UI-COMP-001
+- task_id: UI-COMP-003
+  group: UI
+  subgroup: Components
+  status: pending
+  title: Implement Tool Form Component
+  description: Create a component for displaying and interacting with MCP tools. This
+    should include the tool name, description, parameter inputs, and a send button.
+    Use mock data initially for tool schemas and execution.
+  specs:
+    section: ToolForm
+    lines: 275-300
+    content: '### ToolForm
+
+
+      Form for interacting with server tools.
+
+
+      **Visual Characteristics:**
+
+
+      - Card with tool name as chip
+
+      - Tool description
+
+      - Parameter inputs based on tool schema
+
+      - Send button with loading state
+
+      - Result display area
+
+      - Success/error indicators
+
+
+      **States:**
+
+
+      - Idle
+
+      - Executing (with spinner)
+
+      - Success (with result)
+
+      - Error (with message)
+
+
+      **Functionality:**
+
+
+      - Dynamically generates form based on tool schema
+
+      - Validates required parameters
+
+      - Executes tool with parameters
+
+      - Displays results or errors'
+  depends_on:
+  - UI-COMP-001
+- task_id: UI-COMP-004
+  group: UI
+  subgroup: Components
+  status: pending
+  title: Implement Tool Parameter Component
+  description: Create a component for rendering different types of tool parameters
+    (string, number, boolean, enum, object). This should adapt the input type based
+    on the parameter type and handle validation.
+  specs:
+    section: ToolParameter
+    lines: 302-326
+    content: '### ToolParameter
+
+
+      Individual parameter input for a tool.
+
+
+      **Visual Characteristics:**
+
+
+      - Parameter name with required/optional indicator
+
+      - Parameter description
+
+      - Input type based on parameter type (text, number, boolean, enum)
+
+      - Validation state
+
+      - Slightly darker background for input fields
+
+
+      **Parameter Types:**
+
+
+      - String: Text field
+
+      - Number/Integer: Number field
+
+      - Boolean: Checkbox
+
+      - Enum: Select dropdown
+
+      - Object/Array: Text area (for JSON)
+
+
+      **Functionality:**
+
+
+      - Type-specific input handling
+
+      - Required field validation
+
+      - Updates parent form state on change'
+  depends_on:
+  - UI-COMP-003
+- task_id: UI-THEME-001
+  group: UI
+  subgroup: Theming
+  status: pending
+  title: Implement VSCode Theming
+  description: Adapt the Electron app's theme to match VSCode's theming system. Ensure
+    the extension UI respects the user's selected VSCode theme (light/dark) and color
+    customizations.
+  specs:
+    section: Theme
+    lines: 53-105
+    content: "### Theme\n\nThe application uses a dark theme with the following key\
+      \ colors:\n\n```typescript\n// Dark theme\nconst theme = {\n  palette: {\n \
+      \   mode: 'dark',\n    primary: {\n      main: '#90caf9', // Light blue\n  \
+      \  },\n    secondary: {\n      main: '#f48fb1', // Pink\n    },\n    background:\
+      \ {\n      default: '#121212', // Very dark gray (almost black)\n      paper:\
+      \ '#1e1e1e',   // Dark gray (for cards and surfaces)\n    },\n  },\n  // Component-specific\
+      \ styling\n  components: {\n    MuiCard: {\n      styleOverrides: {\n      \
+      \  root: {\n          backgroundColor: '#1e1e1e', // Dark gray\n        },\n\
+      \      },\n    },\n    MuiPaper: {\n      styleOverrides: {\n        root: {\n\
+      \          backgroundColor: '#1e1e1e', // Dark gray\n        },\n      },\n\
+      \    },\n    MuiAppBar: {\n      styleOverrides: {\n        root: {\n      \
+      \    backgroundColor: '#272727', // Slightly lighter gray for app bar\n    \
+      \    },\n      },\n    },\n    MuiButton: {\n      styleOverrides: {\n     \
+      \   root: {\n          textTransform: 'none', // No uppercase text transform\
+      \ on buttons\n        },\n      },\n    },\n  },\n}\n```"
+  references:
+  - url: https://code.visualstudio.com/api/references/theme-color
+    description: VSCode Theme Color Reference
+  depends_on:
+  - UI-COMP-004
+- task_id: UI-VIEWS-003
+  group: UI
+  subgroup: Views
+  status: pending
+  title: Implement Mock Server Management Commands
+  description: Add commands for adding, editing, and deleting servers. These should
+    be accessible from the Server Explorer view through context menu items and buttons.
+    These commands will be mocked and implemented accessing a local server array in
+    memory. The connection to real storage will be done later.
+  specs:
+    section: Server Management
+    lines: 330-349
+    content: "### Server Management\n\n1. **Adding a Server:**\n   - Click \"Add Server\"\
+      \ card\n   - Either paste JSON configuration or fill form manually\n   - Submit\
+      \ to add server\n   - Server is validated by attempting to connect\n   - On\
+      \ success, server is added to the list\n\n2. **Editing a Server:**\n   - Click\
+      \ Edit button on server card\n   - Modify configuration in the form\n   - Save\
+      \ changes\n   - Server is validated by attempting to connect\n   - On success,\
+      \ server is updated in the list\n\n3. **Deleting a Server:**\n   - Click Delete\
+      \ button on server card\n   - Confirm deletion in dialog\n   - Server is removed\
+      \ from the list"
+  depends_on:
+  - UI-THEME-001
+- task_id: UI-VIEWS-004
+  group: UI
+  subgroup: Views
+  status: pending
+  title: Implement Mock Server Connection
+  description: Add UI functionality for connecting to servers using mock data. Update
+    the server status indicator (red/yellow/green) based on the connection state.
+    Expand the server item to show mock tools when connected.
+  specs:
+    section: Server Connection
+    lines: 351-362
+    content: "### Server Connection\n\n1. **Connecting to a Server:**\n   - Click\
+      \ on a server card\n   - Connection status changes to \"connecting\" (yellow)\n\
+      \   - On success, status changes to \"connected\" (green)\n   - Server card\
+      \ expands to show tools\n   - On failure, status remains \"disconnected\" (red)\n\
+      \n2. **Viewing Tools:**\n   - When server is connected, tools are displayed\
+      \ in the expanded card\n   - Each tool is shown as a card with name, description,\
+      \ and parameters"
+  depends_on:
+  - UI-VIEWS-003
+- task_id: UI-COMP-005
+  group: UI
+  subgroup: Components
+  status: pending
+  title: Implement Mock Tool Execution
+  description: Add UI functionality for executing tools using mock data. Show loading
+    state during execution and display mock results afterward.
+  specs:
+    section: Tool Execution
+    lines: 364-371
+    content: "### Tool Execution\n\n1. **Executing a Tool:**\n   - Fill in required\
+      \ parameters\n   - Click \"Send\" button\n   - Button shows loading state\n\
+      \   - On completion, results are displayed\n   - Success/error status is indicated"
+  depends_on:
+  - UI-VIEWS-004
+- task_id: STORAGE-PERSIST-001
+  group: Storage
+  subgroup: Persistence
+  status: pending
+  title: Implement Server Configuration Storage
+  description: Implement storage for server configurations using VSCode's extension
+    storage API (Memento). This should replace the mock data used in the UI components
+    with real persistent storage. Define TypeScript interfaces for server configurations,
+    and other data structures used in the extension. These should match the interfaces
+    used in the Electron app but adapted for VSCode extension use. Then Update the
+    UI components to use the real storage implementation instead of mock data. This
+    includes loading server configurations from storage and saving changes back to
+    storage.
+  specs:
+    section: Persistence
+    lines: 535-537
+    content: "4. **Persistence**\n   - Use VSCode's extension storage instead of file-based\
+      \ storage\n   - Consider using workspace settings for configuration"
+  references:
+  - url: https://code.visualstudio.com/api/extension-capabilities/common-capabilities#data-storage
+    description: VSCode Data Storage API
+  depends_on:
+  - UI-COMP-005
+- task_id: MCP-CLIENT-001
+  group: MCP
+  subgroup: Client
+  status: pending
+  title: Implement MCP Client
+  description: Implement a client for communicating with MCP servers using the MCP
+    SDK. This should support both STDIO and SSE transport types and handle connection,
+    tool listing, and tool execution. Implement robust error handling for MCP client
+    operations. Display appropriate error messages to the user when operations fail.
+    Update the UI components to use the real MCP client implementation instead of
+    mock data. This includes connecting to servers, listing tools, and executing tools
+    with real data.
+  specs:
+    section: MCP Client Communication
+    lines: 422-425
+    content: "2. **MCP Client Communication**\n   - Connections to MCP servers are\
+      \ managed in the main process\n   - Active connections are stored in a map keyed\
+      \ by server name\n   - Tool execution is handled through these connections"
+  references:
+  - url: https://github.com/modelcontextprotocol/sdk
+    description: MCP SDK Repository
+  depends_on:
+  - STORAGE-PERSIST-001
+- task_id: SETUP-ENV-002
+  group: Setup
+  subgroup: Environment
+  status: pending
+  title: Package Extension
+  description: Prepare the extension for publishing to the VSCode Marketplace. Create
+    a README, add icons, and configure the package.json with appropriate metadata.
+    Test the extension in a clean environment before publishing.
+  specs:
+    section: Publishing Extension
+    lines: ''
+  references:
+  - url: https://code.visualstudio.com/api/working-with-extensions/publishing-extension
+    description: Package VSCode Extensions preparation for publishing
+  depends_on:
+  - MCP-CLIENT-001
