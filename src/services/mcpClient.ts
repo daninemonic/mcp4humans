@@ -77,9 +77,19 @@ export async function connectToServer(server: ServerConfig): Promise<ApiResponse
             }
 
             // Create environment variables object if needed
-            let env: Record<string, string> | undefined = undefined
+            let env: Record<string, string> = {}
+
+            // Include the system PATH to ensure commands can be found
+            if (process.env.PATH) {
+                env.PATH = process.env.PATH
+            }
+
+            // Add user-specified environment variables
             if (server.stdioConfig.environment) {
-                env = server.stdioConfig.environment
+                env = {
+                    ...env,
+                    ...server.stdioConfig.environment,
+                }
             }
 
             // Create STDIO transport
@@ -87,11 +97,30 @@ export async function connectToServer(server: ServerConfig): Promise<ApiResponse
             console.log('Arguments:', server.stdioConfig.args)
             console.log('CWD:', server.stdioConfig.cwd)
 
+            // Handle special cases for common commands
+            let command = server.stdioConfig.cmd
+            let args = [...(server.stdioConfig.args || [])]
+            let cwd = server.stdioConfig.cwd || undefined
+
+            // Special handling for uv command
+            if (command === 'uv' && cwd) {
+                // For uv, we need to use the --directory argument
+                if (!args.includes('--directory') && !args.includes('-d')) {
+                    args = ['--directory', cwd, ...args]
+                }
+                // When using --directory, we don't need to set cwd
+                cwd = undefined
+            }
+
+            // Special handling for python/python3 commands
+            // For python, we keep the cwd as is, as it's passed directly to StdioClientTransport
+
             transport = new StdioClientTransport({
-                command: server.stdioConfig.cmd,
-                args: server.stdioConfig.args,
-                cwd: server.stdioConfig.cwd || undefined,
+                command: command,
+                args: args,
+                cwd: cwd,
                 env,
+                stderr: 'pipe', // Capture stderr for better error reporting
             })
         } else if (server.transportType === TransportType.SSE) {
             if (!server.sseConfig?.url) {
@@ -120,6 +149,25 @@ export async function connectToServer(server: ServerConfig): Promise<ApiResponse
                 success: false,
                 error: `Unsupported transport type: ${server.transportType}`,
             }
+        }
+
+        // Set up error handling for stderr if available (for STDIO transport)
+        if (server.transportType === TransportType.STDIO) {
+            const stdioTransport = transport as StdioClientTransport
+
+            // Start the transport to get access to stderr
+            await stdioTransport.start()
+
+            // Access the stderr stream if available
+            if (stdioTransport.stderr) {
+                stdioTransport.stderr.on('data', (data: Buffer) => {
+                    const output = data.toString()
+                    console.log(`Server "${server.name}" stderr:`, output)
+                })
+            }
+
+            // Monkey-patch the start method to prevent it from being called again during connect
+            stdioTransport.start = async () => {}
         }
 
         // Connect to the server
@@ -202,12 +250,22 @@ export async function getToolsList(serverName: string): Promise<ApiResponse<Tool
             // Ensure we have a valid inputSchema
             const inputSchema = tool.inputSchema || { type: 'object', properties: {} }
 
-            // Extract parameters from the input schema
-            const parameters = extractParametersFromSchema(inputSchema)
+            // Clean up tool description if available
+            let cleanedDescription = tool.description
+                ? tool.description.replace(/\n\s+/g, '\n')
+                : ''
+
+            // Extract parameters from the input schema, passing the tool description
+            const parameters = extractParametersFromSchema(inputSchema, cleanedDescription)
+
+            // Further clean up tool description by removing the Args section now that they have been extracted
+            if (cleanedDescription.includes('Args:')) {
+                cleanedDescription = cleanedDescription.split('Args:')[0].trim()
+            }
 
             return {
                 name: tool.name,
-                description: tool.description || '',
+                description: cleanedDescription,
                 inputSchema: {
                     type: inputSchema.type || 'object',
                     properties: inputSchema.properties || {},
@@ -234,9 +292,10 @@ export async function getToolsList(serverName: string): Promise<ApiResponse<Tool
 /**
  * Extract parameters from a JSON schema
  * @param schema The JSON schema to extract parameters from
+ * @param cleanToolDescription The tool description to extract parameter descriptions from if not provided in schema
  * @returns An array of tool parameters
  */
-function extractParametersFromSchema(schema: any): any[] {
+function extractParametersFromSchema(schema: any, cleanToolDescription: string): any[] {
     if (!schema || !schema.properties) {
         return []
     }
@@ -268,11 +327,30 @@ function extractParametersFromSchema(schema: any): any[] {
                 break
         }
 
+        // Get description from property or empty string
+        let description = prop.description || ''
+
+        // If description is empty and we have a tool description, try to extract it from there
+        if (!description && cleanToolDescription.includes(`${name}:`)) {
+            try {
+                const descriptionMatch = cleanToolDescription
+                    .split(`${name}:`)[1]
+                    .split('\n')[0]
+                    .trim()
+
+                if (descriptionMatch) {
+                    description = descriptionMatch
+                }
+            } catch (error) {
+                console.log(`Error extracting description for parameter ${name}:`, error)
+            }
+        }
+
         parameters.push({
             name,
             type,
             required: isRequired,
-            description: prop.description || '',
+            description,
         })
     }
 
