@@ -7,6 +7,7 @@ import { ServerConfig, Tool, ApiResponse, ToolParameterType, TransportType } fro
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
+import { vscLogServerAdd } from '../models/commands'
 
 // Store active client connections
 const activeClients: Record<string, Client> = {}
@@ -178,6 +179,7 @@ export async function mcpConnect(config: ServerConfig): Promise<ApiResponse<void
         // Connect to the server
         await client.connect(transport, { timeout: 5000 })
         console.log('Connected to MCP server:', config.name)
+        vscLogServerAdd(config.name, 'Connected')
 
         // Store the client for later use
         activeClients[config.name] = client
@@ -186,11 +188,13 @@ export async function mcpConnect(config: ServerConfig): Promise<ApiResponse<void
             success: true,
         }
     } catch (error) {
-        console.error('Failed to connect to server:', error)
-        return {
+        const response = {
             success: false,
             error: error instanceof Error ? error.message : String(error),
         }
+        vscLogServerAdd(config.name, 'Connection failed', JSON.stringify(response, null, 2), true)
+        console.error('Failed to connect to server:', error)
+        return response
     }
 }
 
@@ -211,6 +215,7 @@ export async function mcpDisconnect(serverName: string): Promise<ApiResponse<voi
 
         await client.close()
         console.log('Disconnected from MCP server:', serverName)
+        vscLogServerAdd(serverName, 'Disconnected')
 
         delete activeClients[serverName]
 
@@ -218,11 +223,13 @@ export async function mcpDisconnect(serverName: string): Promise<ApiResponse<voi
             success: true,
         }
     } catch (error) {
-        console.error(`Failed to disconnect from server ${serverName}:`, error)
-        return {
+        const response = {
             success: false,
             error: error instanceof Error ? error.message : String(error),
         }
+        vscLogServerAdd(serverName, 'Disconnect failed', JSON.stringify(response, null, 2), true)
+        console.error(`Failed to disconnect from server ${serverName}:`, error)
+        return response
     }
 }
 
@@ -244,7 +251,16 @@ export async function mcpGetTools(serverName: string): Promise<ApiResponse<Tool[
         console.log(`Getting tools list from server: ${serverName}`)
         const result = await client.listTools()
 
-        if (!result || !result.tools || result.tools.length === 0) {
+        if (!result) {
+            return {
+                success: false,
+                error: 'Error listTools',
+            }
+        }
+
+        vscLogServerAdd(serverName, 'ListTools', JSON.stringify(result, null, 2), false)
+
+        if (!result.tools || result.tools.length === 0) {
             return {
                 success: false,
                 error: 'No tools found',
@@ -287,11 +303,13 @@ export async function mcpGetTools(serverName: string): Promise<ApiResponse<Tool[
             data: tools,
         }
     } catch (error) {
-        console.error(`Failed to get tools list from server ${serverName}:`, error)
-        return {
+        const response = {
             success: false,
             error: error instanceof Error ? error.message : String(error),
         }
+        vscLogServerAdd(serverName, 'ListTools failed', JSON.stringify(response, null, 2), true)
+        console.error(`Failed to get tools list from server ${serverName}:`, error)
+        return response
     }
 }
 
@@ -392,16 +410,29 @@ export async function mcpCallTool(
             arguments: params,
         })
 
+        vscLogServerAdd(
+            serverName,
+            `Tool ${toolName}`,
+            JSON.stringify(result, null, 2),
+            result && !!result.isError
+        )
         console.log(`Tool ${toolName} executed successfully on server ${serverName}`)
         return {
             success: true,
             data: result,
         }
     } catch (error) {
-        console.error(`Failed to execute tool ${toolName} on server ${serverName}:`, error)
-        return {
+        const response = {
             success: false,
             error: error instanceof Error ? error.message : String(error),
         }
+        vscLogServerAdd(
+            serverName,
+            `Tool ${toolName} failed`,
+            JSON.stringify(response, null, 2),
+            true
+        )
+        console.error(`Failed to execute tool ${toolName} on server ${serverName}:`, error)
+        return response
     }
 }

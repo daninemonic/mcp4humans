@@ -9,21 +9,10 @@ import { ServerDetailWebview } from './webviews/serverDetailWebview'
 import { ServerConfigForm } from './webviews/serverConfigForm'
 import { storageServerAdd, storageUpdateServer, storageDeleteServer } from './services/storage'
 import { ServerConfig, ServerSchema } from './models/types'
-import { mcpConnect, mcpDisconnect, mcpIsServerConnected, mcpGetTools } from './services/mcpClient'
+import { MCP4HumansCommand, vscLogServerAdd, vscServerTreeRefresh } from './models/commands'
+import { mcpDisconnect, mcpIsServerConnected } from './services/mcpClient'
 import { mcpConnectAndBuildSchema } from './utils/mcpUtils'
-
-// Enum to define mcp4humans commands list
-export enum MCP4HumansCommand {
-    MCPConnect = 'mcp4humans.mcpConnect',
-    MCPDisconnect = 'mcp4humans.mcpDisconnect',
-    ServerTreeRefresh = 'mcp4humans.serverTreeRefresh',
-    ServerViewAdd = 'mcp4humans.serverViewAdd',
-    ServerViewDetail = 'mcp4humans.serverViewDetail',
-    ServerViewEdit = 'mcp4humans.serverViewEdit',
-    StorageAddServer = 'mcp4humans.storageAddServer',
-    StorageDeleteServer = 'mcp4humans.storageDeleteServer',
-    StorageUpdateServer = 'mcp4humans.storageUpdateServer',
-}
+import { LogService } from './services/logService'
 
 /**
  * Registers all commands for the extension
@@ -34,6 +23,15 @@ export function registerCommands(
     context: vscode.ExtensionContext,
     serverExplorerProvider: ServerExplorerProvider
 ): void {
+    // Register the log server command
+    const LogServerAddCommand = vscode.commands.registerCommand(
+        MCP4HumansCommand.LogServerAdd,
+        (serverName: string, message: string, rawData?: string, isError: boolean = false) => {
+            // Add the log entry to the log service
+            LogService.getInstance().addLog(serverName, message, rawData, isError)
+        }
+    )
+
     // Register the connect server command
     const MCPConnectCommand = vscode.commands.registerCommand(
         MCP4HumansCommand.MCPConnect,
@@ -182,6 +180,7 @@ export function registerCommands(
 
     // Add all commands to subscriptions
     context.subscriptions.push(
+        LogServerAddCommand,
         MCPConnectCommand,
         MCPDisconnectCommand,
         ServerTreeRefreshCommand,
@@ -192,40 +191,4 @@ export function registerCommands(
         StorageUpdateServerCommand,
         StorageDeleteServerCommand
     )
-}
-
-// Create typed functions
-export const vscMCPConnect = async (server: ServerConfig) => {
-    await vscode.commands.executeCommand(MCP4HumansCommand.MCPConnect, server)
-}
-
-export const vscMCPDisconnect = async (server: ServerConfig) => {
-    await vscode.commands.executeCommand(MCP4HumansCommand.MCPDisconnect, server)
-}
-export const vscServerTreeRefresh = () => {
-    vscode.commands.executeCommand(MCP4HumansCommand.ServerTreeRefresh)
-}
-
-export const vscServerViewAdd = () => {
-    vscode.commands.executeCommand(MCP4HumansCommand.ServerViewAdd)
-}
-
-export const vscServerViewDetail = (server: ServerSchema) => {
-    vscode.commands.executeCommand(MCP4HumansCommand.ServerViewDetail, server)
-}
-
-export const vscServerViewEdit = (server: ServerSchema) => {
-    vscode.commands.executeCommand(MCP4HumansCommand.ServerViewEdit, server)
-}
-
-export const vscStorageAddServer = async (schema: ServerSchema) => {
-    await vscode.commands.executeCommand(MCP4HumansCommand.StorageAddServer, schema)
-}
-
-export const vscStorageDeleteServer = async (serverName: string) => {
-    await vscode.commands.executeCommand(MCP4HumansCommand.StorageDeleteServer, serverName)
-}
-
-export const vscStorageUpdateServer = async (schema: ServerSchema) => {
-    await vscode.commands.executeCommand(MCP4HumansCommand.StorageUpdateServer, schema)
 }

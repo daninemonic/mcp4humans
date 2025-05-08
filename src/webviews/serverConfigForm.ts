@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { ServerConfig, TransportType } from '../models/types'
 import { jsonConfigParser } from '../services/jsonConfigParser'
 import { getWebviewContent } from '../utils/webviewUtils'
-import { vscServerViewDetail } from '../commands'
+import { vscServerViewDetail } from '../models/commands'
 import { mcpConnectAndBuildSchema } from '../utils/mcpUtils'
 
 /**

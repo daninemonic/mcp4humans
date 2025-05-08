@@ -5,7 +5,7 @@
  */
 import * as vscode from 'vscode'
 import { ServerSchema } from '../models/types'
-import { MCP4HumansCommand } from '../commands'
+import { MCP4HumansCommand } from '../models/commands'
 
 /**
  * Tree item representing a server in the Server Explorer

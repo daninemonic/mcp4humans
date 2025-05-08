@@ -526,6 +526,86 @@
             border: 1px solid var(--vscode-notificationsWarningIcon-foreground);
             color: white;
         }
+
+        /* Log styles */
+        .log-entries {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .log-entry {
+            border-bottom: 1px solid var(--vscode-panel-border);
+            padding: 8px;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-entry.success .log-entry-icon {
+            color: var(--vscode-testing-iconPassed);
+        }
+
+        .log-entry.error .log-entry-icon {
+            color: var(--vscode-errorForeground);
+        }
+
+        .log-entry-header {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .log-entry.expandable .log-entry-header {
+            cursor: pointer;
+        }
+
+        .log-entry-icon {
+            margin-right: 8px;
+            font-weight: bold;
+        }
+
+        .log-entry-message {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .log-entry-timestamp {
+            color: var(--vscode-descriptionForeground);
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+
+        .log-entry-toggle {
+            margin-left: 8px;
+            transition: transform 0.2s;
+        }
+
+        .log-entry-toggle.open {
+            transform: rotate(180deg);
+        }
+
+        .log-raw-data {
+            margin-top: 8px;
+            padding: 8px;
+            background-color: var(--vscode-textCodeBlock-background);
+            border-radius: 4px;
+            max-height: 300px;
+            overflow: auto;
+        }
+
+        .log-raw-data pre {
+            margin: 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -555,10 +635,7 @@
     </div>
 
     <div id="log-tab" class="tab-content ${logTabActive}">
-        <div class="section">
-            <h2 class="section-title">Log</h2>
-            <p class="tab-empty-message">Log functionality will be added in a future update.</p>
-        </div>
+        ${logSection}
     </div>
 
     <div id="delete-confirmation-modal" class="modal">
@@ -728,6 +805,31 @@
                     command: 'callMCPTool',
                     toolName: toolName,
                     params: parameters
+                });
+            }
+        });
+
+        // Handle log entry clicks to expand/collapse
+        document.addEventListener('click', (e) => {
+            // Check if we clicked on a log entry header or toggle
+            const logEntryHeader = e.target.closest('.log-entry-header');
+            if (logEntryHeader && logEntryHeader.parentElement.classList.contains('expandable')) {
+                const logEntry = logEntryHeader.parentElement;
+                const rawData = logEntry.querySelector('.log-raw-data');
+                const toggle = logEntry.querySelector('.log-entry-toggle');
+
+                if (rawData && toggle) {
+                    rawData.classList.toggle('hidden');
+                    toggle.classList.toggle('open');
+                    toggle.textContent = rawData.classList.contains('hidden') ? '▼' : '▲';
+                }
+            }
+
+            // Check if we clicked the clear logs button
+            if (e.target.id === 'clear-logs-btn') {
+                vscode.postMessage({
+                    command: 'clearLogs',
+                    serverName: '${serverName}'
                 });
             }
         });

@@ -6,7 +6,11 @@
 import * as vscode from 'vscode'
 import { ServerConfig, ServerSchema } from '../models/types'
 import { mcpConnect, mcpDisconnect, mcpGetTools } from '../services/mcpClient'
-import { vscStorageAddServer, vscStorageUpdateServer, vscServerTreeRefresh } from '../commands'
+import {
+    vscStorageAddServer,
+    vscStorageUpdateServer,
+    vscServerTreeRefresh,
+} from '../models/commands'
 
 export async function mcpConnectAndBuildSchema(
     server: ServerConfig,

@@ -72,6 +72,11 @@
                 "command": "mcp4humans.mcpDisconnect",
                 "title": "Disconnect from Server",
                 "icon": "$(debug-disconnect)"
+            },
+            {
+                "command": "mcp4humans.logServerAdd",
+                "title": "Add Server Log Entry",
+                "category": "MCP4Humans"
             }
         ],
         "viewsContainers": {

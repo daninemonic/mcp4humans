@@ -7,6 +7,7 @@ All notable changes to the "MCP4Humans" extension will be documented in this fil
 ### Added
 
 - Server settings view converted into tab view to separate settings and tools
+- Added Log tab with main events and raw messages for debugging MCP servers
 
 ## [1.0.3] - 2024-05-08
 

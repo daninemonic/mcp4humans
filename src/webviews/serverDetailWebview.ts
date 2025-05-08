@@ -7,12 +7,14 @@ import * as vscode from 'vscode'
 import { ServerSchema, ServerConfig, Tool, ToolParameterType } from '../models/types'
 import { mcpCallTool } from '../services/mcpClient'
 import { getWebviewContent } from '../utils/webviewUtils'
+import { LogService } from '../services/logService'
 import {
+    vscLogServerAdd,
     vscMCPConnect,
     vscMCPDisconnect,
     vscServerViewEdit,
     vscStorageDeleteServer,
-} from '../commands'
+} from '../models/commands'
 
 /**
  * Tab types for the server detail view
@@ -165,6 +167,10 @@ export class ServerDetailWebview {
                     case 'tabChanged':
                         this._handleTabChange(message.tab as TabType)
                         return
+                    case 'clearLogs':
+                        LogService.getInstance().clearLogs(this._schema.name)
+                        this._update()
+                        return
                 }
             },
             null,
@@ -190,8 +196,8 @@ export class ServerDetailWebview {
      */
     private _handleTabChange(tabId: TabType): void {
         this._activeTab = tabId
-        // No need to call _update() as this is just tracking the state
-        // The UI is already updated in the webview
+        // Update the UI to ensure the correct tab content is shown
+        this._update()
     }
 
     /**
@@ -369,6 +375,9 @@ export class ServerDetailWebview {
         // Get the tools section
         const toolsSection = this._getToolsSectionHtml()
 
+        // Get the log section
+        const logSection = this._getLogSectionHtml()
+
         // Determine which tab should be active
         const settingsTabActive = this._activeTab === TabType.SETTINGS ? 'active' : ''
         const toolsTabActive = this._activeTab === TabType.TOOLS ? 'active' : ''
@@ -383,6 +392,7 @@ export class ServerDetailWebview {
             connectionButton: connectionButton,
             serverDetails: serverDetails,
             toolsSection: toolsSection,
+            logSection: logSection,
             settingsTabActive: settingsTabActive,
             toolsTabActive: toolsTabActive,
             logTabActive: logTabActive,
@@ -566,6 +576,76 @@ export class ServerDetailWebview {
         })
 
         return paramInputs.join('')
+    }
+
+    /**
+     * Get the HTML for the log section
+     * @returns The HTML for the log section
+     */
+    private _getLogSectionHtml(): string {
+        // Get logs for this server
+        const logs = LogService.getInstance().getLogs(this._schema.name)
+
+        if (logs.length === 0) {
+            return `
+                <div class="section">
+                    <h2 class="section-title">Log</h2>
+                    <p class="tab-empty-message">No logs available for this server.</p>
+                </div>
+            `
+        }
+
+        // Generate HTML for each log entry
+        const logEntriesHtml = logs
+            .map((log, index) => {
+                const timestamp = log.timestamp.toLocaleString()
+                const statusClass = log.isError ? 'error' : 'success'
+                const icon = log.isError ? '❌' : '✓'
+                const hasRawData = !!log.rawData
+                const expandableClass = hasRawData ? 'expandable' : ''
+                const rawDataHtml = hasRawData
+                    ? `<div class="log-raw-data hidden"><pre>${this._escapeHtml(log.rawData || '')}</pre></div>`
+                    : ''
+
+                return `
+                <div class="log-entry ${statusClass} ${expandableClass}" data-index="${index}">
+                    <div class="log-entry-header">
+                        <span class="log-entry-icon">${icon}</span>
+                        <span class="log-entry-message">${this._escapeHtml(log.message)}</span>
+                        <span class="log-entry-timestamp">${timestamp}</span>
+                        ${hasRawData ? '<span class="log-entry-toggle">▼</span>' : ''}
+                    </div>
+                    ${rawDataHtml}
+                </div>
+            `
+            })
+            .join('')
+
+        return `
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Log</h2>
+                    <button id="clear-logs-btn" class="action-button">Clear Logs</button>
+                </div>
+                <div class="log-entries">
+                    ${logEntriesHtml}
+                </div>
+            </div>
+        `
+    }
+
+    /**
+     * Escape HTML special characters
+     * @param text Text to escape
+     * @returns Escaped text
+     */
+    private _escapeHtml(text: string): string {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;')
     }
 
     /**
