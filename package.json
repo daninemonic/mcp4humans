@@ -3,18 +3,18 @@
     "displayName": "MCP4Humans",
     "description": "User-friendly client for Model Context Protocol (MCP) servers - connect, manage, and execute MCP tools directly in VS Code",
     "version": "1.0.0",
-    "publisher": "modelcontextprotocol",
+    "publisher": "daninemonic",
     "author": {
         "name": "Model Context Protocol Team"
     },
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/modelcontextprotocol/mcp4humans-vscode"
+        "url": "https://github.com/daninemonic/mcp4humans"
     },
-    "homepage": "https://github.com/modelcontextprotocol/mcp4humans-vscode#readme",
+    "homepage": "https://github.com/daninemonic/mcp4humans#readme",
     "bugs": {
-        "url": "https://github.com/modelcontextprotocol/mcp4humans-vscode/issues"
+        "url": "https://github.com/daninemonic/mcp4humans/issues"
     },
     "engines": {
         "vscode": "^1.99.0"
