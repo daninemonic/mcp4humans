@@ -379,6 +379,9 @@ export class ServerConfigForm {
             stdioCmdError: this._validationErrors['stdioConfig.cmd']
                 ? `<div class="error">${this._validationErrors['stdioConfig.cmd']}</div>`
                 : '',
+            stdioArgsError: this._validationErrors['stdioConfig.args']
+                ? `<div class="error">${this._validationErrors['stdioConfig.args']}</div>`
+                : '',
             sseUrlError: this._validationErrors['sseConfig.url']
                 ? `<div class="error">${this._validationErrors['sseConfig.url']}</div>`
                 : '',
