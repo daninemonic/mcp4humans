@@ -267,12 +267,8 @@ export class ServerConfigForm {
         if (this._server.transportType === TransportType.STDIO) {
             if (!this._server.stdioConfig) {
                 errors.stdioConfig = 'STDIO configuration is required'
-            } else {
-                if (!this._server.stdioConfig.cmd) {
-                    errors['stdioConfig.cmd'] = 'Command is required'
-                } else if (!this._server.stdioConfig.args) {
-                    errors['stdioConfig.args'] = 'Arguments are required'
-                }
+            } else if (!this._server.stdioConfig.cmd) {
+                errors['stdioConfig.cmd'] = 'Command is required'
             }
         }
 
@@ -380,9 +376,6 @@ export class ServerConfigForm {
                 : '',
             stdioCmdError: this._validationErrors['stdioConfig.cmd']
                 ? `<div class="error">${this._validationErrors['stdioConfig.cmd']}</div>`
-                : '',
-            stdioArgsError: this._validationErrors['stdioConfig.args']
-                ? `<div class="error">${this._validationErrors['stdioConfig.args']}</div>`
                 : '',
             sseUrlError: this._validationErrors['sseConfig.url']
                 ? `<div class="error">${this._validationErrors['sseConfig.url']}</div>`
