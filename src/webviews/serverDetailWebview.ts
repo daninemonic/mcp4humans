@@ -103,7 +103,7 @@ export class ServerDetailWebview {
 
         // Update the content based on view changes
         this._panel.onDidChangeViewState(
-            e => {
+            () => {
                 if (this._panel.visible) {
                     this._update()
                 }
@@ -498,7 +498,6 @@ export class ServerDetailWebview {
                         </div>
                         <div class="result-content">
                             <pre class="result-text"></pre>
-                            <button class="show-more-button hidden">Show more</button>
                         </div>
                     </div>
                 </div>

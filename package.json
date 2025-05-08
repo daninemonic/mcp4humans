@@ -1,25 +1,44 @@
 {
     "name": "mcp4humans",
     "displayName": "MCP4Humans",
-    "description": "MCP Client UI made for humans to easily interact with MCP servers",
-    "version": "0.0.1",
+    "description": "User-friendly client for Model Context Protocol (MCP) servers - connect, manage, and execute MCP tools directly in VS Code",
+    "version": "1.0.0",
     "publisher": "modelcontextprotocol",
+    "author": {
+        "name": "Model Context Protocol Team"
+    },
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/modelcontextprotocol/mcp4humans-vscode"
+    },
+    "homepage": "https://github.com/modelcontextprotocol/mcp4humans-vscode#readme",
+    "bugs": {
+        "url": "https://github.com/modelcontextprotocol/mcp4humans-vscode/issues"
+    },
     "engines": {
         "vscode": "^1.99.0"
     },
     "categories": [
         "Other",
         "Visualization",
-        "Testing"
+        "Testing",
+        "Machine Learning"
     ],
     "keywords": [
         "mcp",
         "model-context-protocol",
         "mcp-client",
         "ai",
-        "tools"
+        "tools",
+        "llm",
+        "machine-learning"
     ],
     "icon": "resources/mcp4humans-icon.png",
+    "galleryBanner": {
+        "color": "#1e1e1e",
+        "theme": "dark"
+    },
     "activationEvents": [],
     "main": "./dist/extension.js",
     "contributes": {

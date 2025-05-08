@@ -1,9 +1,13 @@
 # Change Log
 
-All notable changes to the "mcp4humans" extension will be documented in this file.
+All notable changes to the "MCP4Humans" extension will be documented in this file.
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+## [1.0.0] - 2024-05-07
 
-## [Unreleased]
+### Added
 
-- Initial release
+- Initial release of MCP4Humans
+- Server management interface for adding, editing, and deleting MCP servers
+- Support for both stdio and SSE MCP servers
+- Tool execution with parameter forms
+

@@ -1,71 +1,95 @@
-# mcp4humans README
+# MCP4Humans - Model Context Protocol Client for VS Code
 
-This is the README for your extension "mcp4humans". After writing up a brief description, we recommend including the following sections.
+![MCP4Humans Logo](resources/mcp4humans-icon.png)
+
+MCP4Humans is a user-friendly VS Code extension that allows you to connect to and interact with Model Context Protocol (MCP) servers directly from your editor. It provides an intuitive interface for managing MCP servers, executing tools, and viewing results.
+
+## What is MCP?
+
+The Model Context Protocol (MCP) is an open standard for AI tools and agents to interact with external systems. It enables AI models to access tools, resources, and capabilities beyond their training data, such as:
+
+- Retrieving information from databases or the web
+- Executing code
+- Accessing file systems
+- Interacting with APIs
+- And much more
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+### Easy Server Management
 
-For example if there is an image subfolder under your extension project workspace:
+- Add, edit, and delete MCP server configurations
+- Connect to both local (stdio) and remote (SSE) MCP servers
+- View server connection status at a glance
 
-\!\[feature X\]\(images/feature-x.png\)
+![Server Management Interface](images/server-management.png)
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+### Tool Execution
+
+- Browse available tools from connected MCP servers
+- Execute tools with a simple form interface
+- View tool execution results in a collapsible panel
+
+![Tool Execution Interface](images/tool-execution.png)
+
+### Seamless Integration
+
+- Access MCP servers directly from the VS Code sidebar
+- Persistent storage of server configurations
+- Intuitive UI that follows VS Code design patterns
+
+## Getting Started
+
+1. Install the MCP4Humans extension from the VS Code Marketplace
+2. Click the MCP4Humans icon in the activity bar to open the MCP Servers view
+3. Click the "+" button to add a new MCP server
+4. Fill in the server details:
+   - You may start by pasting the usual JSON Claude configuration in the JSON box and letting it populate part of the form for you.
+   - Fill in the rest as needed.
+5. Click "Connect" to test and save the server configuration
+6. Click on a server in the list to view and execute available tools
+
+## Supported Server Types
+
+### Local (stdio) Servers
+
+MCP4Humans supports local MCP servers that communicate via standard input/output (stdio). You can configure:
+
+- Command: The executable to run (e.g., `python`, `node`, `uv`)
+- Arguments: Command-line arguments (e.g., `run`, `server.py`)
+- Working Directory: For local installations or development.
+- Environment Variables: Custom environment variables to pass to the server process.
+
+### Remote (SSE) Servers
+
+MCP4Humans also supports remote MCP servers that communicate via Server-Sent Events (SSE). You can configure:
+
+- URL: The server endpoint (format: `http(s)://{host}:{port}/sse`)
+- Headers: Custom HTTP headers for authentication or other purposes
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- VS Code 1.99.0 or higher
+- An MCP-compatible server to connect to
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
-
 ### 1.0.0
 
-Initial release of ...
+- Initial release of MCP4Humans
+- Support for both stdio and SSE MCP servers
+- Tool execution with parameter forms
+- Server management interface
 
-### 1.0.1
+## Feedback and Contributions
 
-Fixed issue #.
+- File issues and feature requests on our [GitHub repository](https://github.com/modelcontextprotocol/mcp4humans-vscode)
+- Contribute to the development by submitting pull requests
 
-### 1.1.0
+## License
 
-Added features X, Y, and Z.
+This extension is licensed under the MIT License. See the LICENSE file for details.
 
 ---
 
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+**Enjoy using MCP4Humans!**

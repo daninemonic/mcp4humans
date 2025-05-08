@@ -257,25 +257,33 @@
         .result-text {
             font-family: monospace;
             white-space: pre-wrap;
+            overflow-y: auto;
             overflow-x: auto;
             margin: 0;
             padding: 10px;
             background-color: var(--vscode-textCodeBlock-background);
             border-radius: 2px;
+            max-height: calc(1.2em * 10);
+            /* Height for approximately 10 lines */
+            scrollbar-width: thin;
+            /* For Firefox */
+            scrollbar-color: var(--vscode-scrollbarSlider-background) transparent;
+            /* For Firefox */
         }
 
-        .show-more-button {
-            background: none;
-            border: none;
-            color: var(--vscode-textLink-foreground);
-            cursor: pointer;
-            padding: 5px 0;
-            margin-top: 5px;
-            text-decoration: underline;
+        /* Webkit scrollbar styling */
+        .result-text::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
         }
 
-        .show-more-button:hover {
-            color: var(--vscode-textLink-activeForeground);
+        .result-text::-webkit-scrollbar-thumb {
+            background-color: var(--vscode-scrollbarSlider-background);
+            border-radius: 4px;
+        }
+
+        .result-text::-webkit-scrollbar-thumb:hover {
+            background-color: var(--vscode-scrollbarSlider-hoverBackground);
         }
 
         .loading-spinner {
@@ -431,20 +439,6 @@
                     resultToggle.classList.toggle('open');
                     resultToggle.textContent = resultContent.classList.contains('open') ? '▲' : '▼';
                 }
-            } else if (e.target.classList.contains('show-more-button')) {
-                // Show more/less button
-                const button = e.target;
-                const resultText = button.previousElementSibling;
-
-                if (button.textContent === 'Show more') {
-                    // Show full text
-                    resultText.textContent = resultText.dataset.full;
-                    button.textContent = 'Show less';
-                } else {
-                    // Show truncated text (first 5 lines)
-                    resultText.textContent = resultText.dataset.truncated;
-                    button.textContent = 'Show more';
-                }
             }
         });
 
@@ -558,7 +552,6 @@
                 const resultStatusText = resultContainer.querySelector('.result-status-text');
                 const resultContent = resultContainer.querySelector('.result-content');
                 const resultText = resultContainer.querySelector('.result-text');
-                const showMoreButton = resultContainer.querySelector('.show-more-button');
 
                 // Show the result container
                 resultContainer.classList.remove('hidden');
@@ -573,21 +566,8 @@
                 // Format the result as JSON
                 const resultJson = JSON.stringify(data, null, 2);
 
-                // Store the full result
-                resultText.dataset.full = resultJson;
-
-                // Truncate the result for collapsed view
-                const resultLines = resultJson.split('\n');
-                if (resultLines.length > 5) {
-                    // Show first 5 lines only
-                    resultText.textContent = resultLines.slice(0, 5).join('\n');
-                    resultText.dataset.truncated = resultText.textContent;
-                    showMoreButton.classList.remove('hidden');
-                    showMoreButton.textContent = 'Show more';
-                } else {
-                    resultText.textContent = resultJson;
-                    showMoreButton.classList.add('hidden');
-                }
+                // Display the full result
+                resultText.textContent = resultJson;
 
                 // Close the result content
                 resultContent.classList.remove('open');
