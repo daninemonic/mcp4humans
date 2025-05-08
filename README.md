@@ -83,7 +83,7 @@ MCP4Humans also supports remote MCP servers that communicate via Server-Sent Eve
 
 ## Feedback and Contributions
 
-- File issues and feature requests on our [GitHub repository](https://github.com/modelcontextprotocol/mcp4humans-vscode)
+- File issues and feature requests on our [GitHub repository](https://github.com/daninemonic/mcp4humans)
 - Contribute to the development by submitting pull requests
 
 ## License
