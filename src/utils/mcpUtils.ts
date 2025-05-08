@@ -55,6 +55,8 @@ export async function mcpConnectAndBuildSchema(
             // Refresh the server explorer to update the connection status
             vscServerTreeRefresh()
 
+            vscode.window.showInformationMessage(`Connected to ${server.name}`)
+
             return schema
         }
     )

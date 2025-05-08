@@ -403,24 +403,48 @@ export class ServerDetailWebview {
      * @returns The HTML for the server configuration section
      */
     private _getServerConfigHtml(): string {
-        // Get the transport-specific configuration
-        let transportConfig = ''
+        // Get the transport-specific configuration rows
+        let transportRows = ''
         if (this._schema.transportType === 'stdio') {
             const stdioConfig = this._schema.stdioConfig
             if (stdioConfig) {
-                transportConfig = `
-                    <div class="property">
-                        <span class="property-name">Command:</span> ${stdioConfig.cmd}
-                    </div>
-                    <div class="property">
-                        <span class="property-name">Arguments:</span> ${stdioConfig.args.join(' ')}
-                    </div>
+                transportRows = `
+                    <tr>
+                        <td class="property-name">Command</td>
+                        <td>${stdioConfig.cmd}</td>
+                    </tr>
+                    <tr>
+                        <td class="property-name">Arguments</td>
+                        <td>${stdioConfig.args.join(' ')}</td>
+                    </tr>
                     ${
                         stdioConfig.cwd
                             ? `
-                    <div class="property">
-                        <span class="property-name">Working Directory:</span> ${stdioConfig.cwd}
-                    </div>
+                    <tr>
+                        <td class="property-name">Working Directory</td>
+                        <td>${stdioConfig.cwd}</td>
+                    </tr>
+                    `
+                            : ''
+                    }
+                    ${
+                        stdioConfig.environment && Object.keys(stdioConfig.environment).length > 0
+                            ? `
+                    <tr>
+                        <td class="property-name">Environment Variables</td>
+                        <td>
+                            <table class="nested-table">
+                                ${Object.entries(stdioConfig.environment)
+                                    .map(
+                                        ([key, value]) => `
+                                <tr>
+                                    <td>${key}=${value}</td>
+                                </tr>`
+                                    )
+                                    .join('')}
+                            </table>
+                        </td>
+                    </tr>
                     `
                             : ''
                     }
@@ -429,17 +453,29 @@ export class ServerDetailWebview {
         } else if (this._schema.transportType === 'sse') {
             const sseConfig = this._schema.sseConfig
             if (sseConfig) {
-                transportConfig = `
-                    <div class="property">
-                        <span class="property-name">URL:</span> ${sseConfig.url}
-                    </div>
+                transportRows = `
+                    <tr>
+                        <td class="property-name">URL</td>
+                        <td>${sseConfig.url}</td>
+                    </tr>
                     ${
-                        sseConfig.headers
+                        sseConfig.headers && Object.keys(sseConfig.headers).length > 0
                             ? `
-                    <div class="property">
-                        <span class="property-name">Headers:</span>
-                        <pre>${JSON.stringify(sseConfig.headers, null, 2)}</pre>
-                    </div>
+                    <tr>
+                        <td class="property-name">Headers</td>
+                        <td>
+                            <table class="nested-table">
+                                ${Object.entries(sseConfig.headers)
+                                    .map(
+                                        ([key, value]) => `
+                                <tr>
+                                    <td>${key}: ${value}</td>
+                                </tr>`
+                                    )
+                                    .join('')}
+                            </table>
+                        </td>
+                    </tr>
                     `
                             : ''
                     }
@@ -447,17 +483,33 @@ export class ServerDetailWebview {
             }
         }
 
-        // Return the server configuration section
+        // Return the server configuration section with separate sections
         return `
             <div class="section">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h2 class="section-title">Server Configuration</h2>
-                    <button id="edit-server-btn" ${this._isConnected ? 'disabled' : ''} title="${this._isConnected ? 'Disconnect server to edit' : 'Edit server configuration'}">Edit</button>
+                <!-- Server Configuration Section -->
+                <div class="settings-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Server Configuration</h2>
+                        <button id="edit-server-btn" class="action-button" ${this._isConnected ? 'disabled' : ''} title="${this._isConnected ? 'Disconnect server to edit' : 'Edit server configuration'}">Edit</button>
+                    </div>
+
+                    <table class="settings-table">
+                        <tr>
+                            <td class="property-name">Transport Type</td>
+                            <td>${this._schema.transportType}</td>
+                        </tr>
+                        ${transportRows}
+                    </table>
                 </div>
-                <div class="property">
-                    <span class="property-name">Transport Type:</span> ${this._schema.transportType}
+            </div>
+            <div class="section">
+                <!-- Danger Zone Section -->
+                <div class="settings-section danger-section">
+                    <h2 class="section-title">Danger Zone</h2>
+                    <div class="settings-actions">
+                        <button id="delete-server-btn" class="delete-button action-button">Delete Server</button>
+                    </div>
                 </div>
-                ${transportConfig}
             </div>
         `
     }

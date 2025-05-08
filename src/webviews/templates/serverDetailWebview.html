@@ -68,10 +68,6 @@
             margin-right: 8px;
         }
 
-        button:hover {
-            background-color: var(--vscode-button-hoverBackground);
-        }
-
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -84,6 +80,19 @@
             border-radius: 4px;
             border-bottom: 1px solid var(--vscode-panel-border);
             border-right: 1px solid var(--vscode-panel-border);
+            overflow-x: auto;
+            /* Add horizontal scrolling for small widths */
+            min-width: 300px;
+            /* Minimum width to prevent extreme squishing */
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            /* Allow wrapping on small screens */
+            margin-bottom: 10px;
         }
 
         .section-title {
@@ -91,6 +100,10 @@
             font-weight: bold;
             margin-top: 0;
             margin-bottom: 10px;
+            flex: 1;
+            /* Take available space */
+            min-width: 150px;
+            /* Ensure title has minimum width */
         }
 
         .property {
@@ -433,6 +446,86 @@
             text-align: left;
             color: var(--vscode-descriptionForeground);
         }
+
+        /* Settings table styles */
+        .settings-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            /* Fixed layout for better control */
+        }
+
+        .settings-table td {
+            padding: 8px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+            word-break: break-word;
+            /* Break long words */
+            overflow-wrap: break-word;
+            /* Ensure text wraps */
+        }
+
+        .settings-table td.property-name {
+            font-weight: bold;
+            width: 30%;
+        }
+
+        /* Nested table for environment variables and headers */
+        .nested-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            /* Fixed layout for better control */
+        }
+
+        .nested-table td {
+            padding: 4px 0;
+            border-bottom: none;
+            word-break: break-word;
+            /* Break long words */
+            overflow-wrap: break-word;
+            /* Ensure text wraps */
+        }
+
+        /* Settings section styles */
+        .settings-section {
+            border-bottom: 1px solid var(--vscode-panel-border);
+        }
+
+        .settings-section:last-child {
+            border-bottom: none;
+        }
+
+        .settings-section-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: var(--vscode-foreground);
+        }
+
+        /* Settings actions container */
+        .settings-actions {
+            margin-top: 10px;
+        }
+
+        .action-button {
+            padding: 8px 16px;
+            margin-right: 8px;
+        }
+
+        /* Danger zone section */
+        .danger-section {}
+
+        .delete-button {
+            background-color: transparent;
+            border: 1px solid var(--vscode-errorForeground);
+            color: white;
+        }
+
+        .disconnect-button {
+            background-color: transparent;
+            border: 1px solid var(--vscode-notificationsWarningIcon-foreground);
+            color: white;
+        }
     </style>
 </head>
 
@@ -443,8 +536,6 @@
             <p class="server-description">${serverDescription}</p>
         </div>
         <div class="connection-status">
-            <div class="status-indicator ${connectionStatusClass}"></div>
-            <span class="status-text">${connectionStatus}</span>
             ${connectionButton}
         </div>
     </div>
@@ -457,10 +548,6 @@
 
     <div id="settings-tab" class="tab-content ${settingsTabActive}">
         ${serverDetails}
-
-        <div class="delete-button-div">
-            <button id="delete-server-btn" class="delete-button">Delete Server</button>
-        </div>
     </div>
 
     <div id="tools-tab" class="tab-content ${toolsTabActive}">
@@ -469,6 +556,7 @@
 
     <div id="log-tab" class="tab-content ${logTabActive}">
         <div class="section">
+            <h2 class="section-title">Log</h2>
             <p class="tab-empty-message">Log functionality will be added in a future update.</p>
         </div>
     </div>
