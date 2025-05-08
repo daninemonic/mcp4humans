@@ -4,10 +4,11 @@
  * This module provides a webview panel for adding and editing server configurations.
  */
 import * as vscode from 'vscode'
-import { ServerConfig, TransportType } from '../models/types'
-import { connectToServer, getToolsList, disconnectFromServer } from '../services/mcpClient'
-import { parseJsonConfig } from '../services/jsonParser'
+import { ServerConfig, ServerSchema, TransportType } from '../models/types'
+import { mcpConnect, mcpGetTools, mcpDisconnect } from '../services/mcpClient'
+import { jsonParserParseConfig } from '../services/jsonParser'
 import { getWebviewContent } from '../utils/webviewUtils'
+import { vscServerTreeRefresh, vscServerViewDetail, vscStorageSaveServer } from '../commands'
 
 /**
  * Class that manages the server configuration form webview panel
@@ -192,7 +193,7 @@ export class ServerConfigForm {
         this._isTesting = true
         this._update()
 
-        const connectResponse = await connectToServer(this._server)
+        const connectResponse = await mcpConnect(this._server)
         if (!connectResponse.success) {
             this._isTesting = false
             vscode.window.showErrorMessage(`Failed to connect to server: ${connectResponse.error}`)
@@ -201,29 +202,34 @@ export class ServerConfigForm {
         }
 
         // Test getting tools
-        const toolsResponse = await getToolsList(this._server.name)
-        if (!toolsResponse.success) {
+        const toolsResponse = await mcpGetTools(this._server.name)
+        if (!toolsResponse.success || !toolsResponse.data) {
             this._isTesting = false
             vscode.window.showErrorMessage(
                 `Failed to get tools from server: ${toolsResponse.error}`
             )
 
             // Make sure it's disconnected
-            await disconnectFromServer(this._server.name)
+            await mcpDisconnect(this._server.name)
             this._update()
             return
         }
 
         this._isTesting = false
+        const tools = toolsResponse.data
+        const schema: ServerSchema = {
+            ...this._server,
+            tools,
+        }
 
         // Save the server configuration
-        vscode.commands.executeCommand('mcp4humans.saveServer', this._server, this._isEditing)
+        vscStorageSaveServer(schema, this._isEditing)
 
         // Refresh the server list
-        vscode.commands.executeCommand('mcp4humans.refreshServerList')
+        vscServerTreeRefresh()
 
         // Open detail window to show it's configured and connected
-        vscode.commands.executeCommand('mcp4humans.openServerDetail', this._server)
+        vscServerViewDetail(schema)
 
         // Close the form
         this._panel.dispose()
@@ -235,7 +241,7 @@ export class ServerConfigForm {
      */
     private _handleParseJson(json: string): void {
         // Use the flexible JSON parser
-        const result = parseJsonConfig(json)
+        const result = jsonParserParseConfig(json)
 
         if (result.success && result.data) {
             // Update the server configuration

@@ -435,7 +435,7 @@
             } else if (e.target.classList.contains('disconnect-button')) {
                 vscode.postMessage({ command: 'disconnect' });
             } else if (e.target.id === 'edit-server-btn') {
-                vscode.postMessage({ command: 'editServer' });
+                vscode.postMessage({ command: 'serverEdit' });
             } else if (e.target.id === 'delete-server-btn') {
                 // Show the delete confirmation modal
                 document.getElementById('delete-confirmation-modal').style.display = 'flex';
@@ -533,7 +533,7 @@
 
                 // Send message to execute tool
                 vscode.postMessage({
-                    command: 'executeTool',
+                    command: 'callMCPTool',
                     toolName: toolName,
                     params: parameters
                 });

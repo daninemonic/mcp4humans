@@ -44,32 +44,32 @@
     "contributes": {
         "commands": [
             {
-                "command": "mcp4humans.refreshServerList",
+                "command": "mcp4humans.serverTreeRefresh",
                 "title": "Refresh",
                 "icon": "$(refresh)"
             },
             {
-                "command": "mcp4humans.addServer",
+                "command": "mcp4humans.serverViewAdd",
                 "title": "Add Server",
                 "icon": "$(add)"
             },
             {
-                "command": "mcp4humans.editServer",
+                "command": "mcp4humans.serverViewEdit",
                 "title": "Edit Server",
                 "icon": "$(edit)"
             },
             {
-                "command": "mcp4humans.deleteServer",
+                "command": "mcp4humans.storageDeleteServer",
                 "title": "Delete Server",
                 "icon": "$(trash)"
             },
             {
-                "command": "mcp4humans.connectServer",
+                "command": "mcp4humans.mcpConnect",
                 "title": "Connect to Server",
                 "icon": "$(plug)"
             },
             {
-                "command": "mcp4humans.disconnectServer",
+                "command": "mcp4humans.mcpDisconnect",
                 "title": "Disconnect from Server",
                 "icon": "$(debug-disconnect)"
             }
@@ -94,33 +94,33 @@
         "menus": {
             "view/title": [
                 {
-                    "command": "mcp4humans.refreshServerList",
+                    "command": "mcp4humans.serverTreeRefresh",
                     "when": "view == mcp4humans.serverExplorer",
                     "group": "navigation"
                 },
                 {
-                    "command": "mcp4humans.addServer",
+                    "command": "mcp4humans.serverViewAdd",
                     "when": "view == mcp4humans.serverExplorer",
                     "group": "navigation"
                 }
             ],
             "view/item/context": [
                 {
-                    "command": "mcp4humans.editServer",
+                    "command": "mcp4humans.serverViewEdit",
                     "when": "view == mcp4humans.serverExplorer && viewItem == server",
                     "group": "inline"
                 },
                 {
-                    "command": "mcp4humans.deleteServer",
+                    "command": "mcp4humans.storageDeleteServer",
                     "when": "view == mcp4humans.serverExplorer && viewItem == server",
                     "group": "inline"
                 },
                 {
-                    "command": "mcp4humans.connectServer",
+                    "command": "mcp4humans.mcpConnect",
                     "when": "view == mcp4humans.serverExplorer && viewItem == disconnected"
                 },
                 {
-                    "command": "mcp4humans.disconnectServer",
+                    "command": "mcp4humans.mcpDisconnect",
                     "when": "view == mcp4humans.serverExplorer && viewItem == connected"
                 }
             ]

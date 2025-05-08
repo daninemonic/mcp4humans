@@ -10,7 +10,7 @@ import { ServerConfig, ApiResponse, TransportType } from '../models/types'
  * @param jsonString The JSON string to parse
  * @returns An ApiResponse containing the parsed ServerConfig or an error
  */
-export function parseJsonConfig(jsonString: string): ApiResponse<ServerConfig> {
+export function jsonParserParseConfig(jsonString: string): ApiResponse<ServerConfig> {
     try {
         const parsedJson = JSON.parse(jsonString)
 

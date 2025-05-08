@@ -5,8 +5,9 @@
  */
 import * as vscode from 'vscode'
 import { ServerTreeItem } from './serverTreeItem'
-import { getServers } from '../services/storage'
-import { isServerConnected } from '../services/mcpClient'
+import { ServerSchema } from '../models/types'
+import { storageGetServers } from '../services/storage'
+import { mcpIsServerConnected } from '../services/mcpClient'
 
 /**
  * Provider for the Server Explorer tree view
@@ -61,7 +62,7 @@ export class ServerExplorerProvider implements vscode.TreeDataProvider<ServerTre
      */
     private async getServers(): Promise<ServerTreeItem[]> {
         // Get servers from storage utility
-        const response = await getServers(this.context)
+        const response = await storageGetServers(this.context)
 
         if (!response.success || !response.data) {
             // If there was an error, show it and return an empty array
@@ -73,13 +74,13 @@ export class ServerExplorerProvider implements vscode.TreeDataProvider<ServerTre
 
         // Map the servers to tree items
         return response.data.map(
-            server =>
+            (schema: ServerSchema) =>
                 new ServerTreeItem(
-                    server.name,
-                    server.description || '',
-                    server.transportType,
-                    isServerConnected(server.name), // Check if the server is connected
-                    server
+                    schema.name,
+                    schema.description || '',
+                    schema.transportType,
+                    mcpIsServerConnected(schema.name),
+                    schema
                 )
         )
     }

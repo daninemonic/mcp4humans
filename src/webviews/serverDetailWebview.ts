@@ -4,26 +4,32 @@
  * This module provides a webview panel for displaying server details and tools.
  */
 import * as vscode from 'vscode'
-import { ServerConfig, Tool, ToolParameterType } from '../models/types'
-import { getToolsList, executeTool } from '../services/mcpClient'
+import { ServerSchema, ServerConfig, Tool, ToolParameterType } from '../models/types'
+import { mcpCallTool } from '../services/mcpClient'
 import { getWebviewContent } from '../utils/webviewUtils'
+import {
+    vscMCPConnect,
+    vscMCPDisconnect,
+    vscServerViewEdit,
+    vscStorageDeleteServer,
+} from '../commands'
 
 /**
  * Class that manages the server detail webview panel
  */
 export class ServerDetailWebview {
     /**
-     * Track the currently panel. Only allow a single panel to exist at a time.
+     * Keeps track of server panels
+     * Allows one panel per server
      */
-    public static currentPanel: ServerDetailWebview | undefined
+    public static panels: ServerDetailWebview[] = []
 
     private readonly _panel: vscode.WebviewPanel
     private readonly _extensionUri: vscode.Uri
     private _disposables: vscode.Disposable[] = []
-    private _server: ServerConfig
+    private _schema: ServerSchema
     private _isConnected: boolean = false
     private _isLoading: boolean = false
-    private _tools: Tool[] = []
 
     /**
      * Get the static view type for the webview panel
@@ -31,32 +37,41 @@ export class ServerDetailWebview {
     public static readonly viewType = 'mcp4humans.serverDetail'
 
     /**
+     * Get the server panel
+     */
+    public static getPanel(name: string): ServerDetailWebview | undefined {
+        return ServerDetailWebview.panels.find(panel => panel._schema.name === name)
+    }
+
+    /**
      * Create or show a server detail panel
      * @param extensionUri The URI of the extension
-     * @param server The server configuration
+     * @param server The server schema
      * @param isConnected Whether the server is connected
      */
     public static createOrShow(
         extensionUri: vscode.Uri,
-        server: ServerConfig,
+        schema: ServerSchema,
         isConnected: boolean
     ): ServerDetailWebview {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined
 
-        // If we already have a panel, reuse it but keep in mind that if
-        // it's a different server we need to get the tools again
-        if (ServerDetailWebview.currentPanel) {
-            ServerDetailWebview.currentPanel._panel.reveal(column)
-            ServerDetailWebview.currentPanel.update(server, isConnected)
-            return ServerDetailWebview.currentPanel
+        // Check if there's already a panel for this server
+        const serverPanel = ServerDetailWebview.getPanel(schema.name)
+        if (serverPanel) {
+            serverPanel._schema = schema
+            serverPanel._isConnected = isConnected
+            serverPanel._panel.reveal(column)
+            serverPanel._update()
+            return serverPanel
         }
 
-        // Otherwise, create a new panel
+        // Create a new panel and add it to the list
         const panel = vscode.window.createWebviewPanel(
             ServerDetailWebview.viewType,
-            `Server: ${server.name}`,
+            `Server: ${schema.name}`,
             column || vscode.ViewColumn.One,
             {
                 // Enable JavaScript in the webview
@@ -68,31 +83,28 @@ export class ServerDetailWebview {
             }
         )
 
-        ServerDetailWebview.currentPanel = new ServerDetailWebview(
-            panel,
-            extensionUri,
-            server,
-            isConnected
-        )
-        return ServerDetailWebview.currentPanel
+        const view = new ServerDetailWebview(panel, extensionUri, schema, isConnected)
+        ServerDetailWebview.panels.push(view)
+
+        return view
     }
 
     /**
      * Constructor
      * @param panel The webview panel
      * @param extensionUri The URI of the extension
-     * @param server The server configuration
+     * @param schema The server schema
      * @param isConnected Whether the server is connected
      */
     private constructor(
         panel: vscode.WebviewPanel,
         extensionUri: vscode.Uri,
-        server: ServerConfig,
+        schema: ServerSchema,
         isConnected: boolean
     ) {
         this._panel = panel
         this._extensionUri = extensionUri
-        this._server = server
+        this._schema = schema
         this._isConnected = isConnected
 
         // Set the webview's initial html content
@@ -118,18 +130,19 @@ export class ServerDetailWebview {
             message => {
                 switch (message.command) {
                     case 'connect':
-                        this._handleConnect()
+                        vscMCPConnect(this._schema as ServerConfig)
                         return
                     case 'disconnect':
-                        this._handleDisconnect()
+                        vscMCPDisconnect(this._schema as ServerConfig)
                         return
-                    case 'editServer':
-                        this._handleEditServer()
+                    case 'serverEdit':
+                        vscServerViewEdit(this._schema)
                         return
                     case 'deleteServer':
-                        this._handleDeleteServer()
+                        vscStorageDeleteServer(this._schema.name)
+                        this._panel.dispose()
                         return
-                    case 'executeTool':
+                    case 'callMCPTool':
                         this._handleExecuteTool(message.toolName, message.params)
                         return
                 }
@@ -137,38 +150,17 @@ export class ServerDetailWebview {
             null,
             this._disposables
         )
-
-        // If the server is connected, load the tools
-        if (isConnected) {
-            this._loadTools()
-        }
     }
 
     /**
      * Update the server and connection status
-     * @param server The server configuration
+     * @param schema The server schema
      * @param isConnected Whether the server is connected
      */
-    public async update(server: ServerConfig, isConnected: boolean): Promise<void> {
-        const prevServer = this._server.name
-        const prevConnected = this._isConnected
-
-        this._server = server
+    public async update(schema: ServerSchema, isConnected: boolean): Promise<void> {
+        this._schema = schema
         this._isConnected = isConnected
-        this._panel.title = `Server: ${server.name}`
-
-        if (isConnected) {
-            if (!prevConnected || prevServer !== server.name) {
-                // Show loading state
-                this._isLoading = true
-                this._update()
-
-                // Wait for tools to load
-                await this._loadTools()
-                return
-            }
-        }
-
+        this._panel.title = `Server: ${schema.name}`
         this._update()
     }
 
@@ -176,7 +168,8 @@ export class ServerDetailWebview {
      * Dispose of the webview panel and resources
      */
     public dispose(): void {
-        ServerDetailWebview.currentPanel = undefined
+        // Remove panel from list
+        ServerDetailWebview.panels = ServerDetailWebview.panels.filter(panel => panel !== this)
 
         // Clean up resources
         this._panel.dispose()
@@ -190,66 +183,13 @@ export class ServerDetailWebview {
     }
 
     /**
-     * Load the tools for the server
-     */
-    private async _loadTools(): Promise<void> {
-        this._isLoading = true
-        this._update()
-
-        // Get the tools from the MCP client
-        const response = await getToolsList(this._server.name)
-
-        this._isLoading = false
-
-        if (response.success && response.data) {
-            this._tools = response.data
-        } else {
-            if (response.error) {
-                vscode.window.showErrorMessage(`Failed to get tools: ${response.error}`)
-            }
-            this._tools = []
-        }
-
-        this._update()
-    }
-
-    /**
-     * Handle the connect button click
-     */
-    private _handleConnect(): void {
-        vscode.commands.executeCommand('mcp4humans.connectServer', this._server)
-    }
-
-    /**
-     * Handle the disconnect button click
-     */
-    private _handleDisconnect(): void {
-        vscode.commands.executeCommand('mcp4humans.disconnectServer', this._server)
-    }
-
-    /**
-     * Handle the edit server button click
-     */
-    private _handleEditServer(): void {
-        vscode.commands.executeCommand('mcp4humans.editServer', this._server)
-    }
-
-    /**
-     * Handle the delete server button click
-     */
-    private _handleDeleteServer(): void {
-        vscode.commands.executeCommand('mcp4humans.deleteServer', this._server)
-        this._panel.dispose()
-    }
-
-    /**
      * Handle the execute tool button click
      * @param toolName The name of the tool to execute
      * @param params The parameters for the tool
      */
     private async _handleExecuteTool(toolName: string, params: any): Promise<void> {
         // Find the tool by name
-        const tool = this._tools.find(t => t.name === toolName)
+        const tool = this._schema.tools.find(t => t.name === toolName)
         if (!tool) {
             vscode.window.showErrorMessage(`Tool ${toolName} not found`)
             return
@@ -257,7 +197,7 @@ export class ServerDetailWebview {
 
         try {
             // Execute the tool
-            const response = await executeTool(this._server.name, toolName, params)
+            const response = await mcpCallTool(this._schema.name, toolName, params)
 
             if (!response.success) {
                 // Error case - tool execution failed
@@ -401,8 +341,8 @@ export class ServerDetailWebview {
 
         // Prepare replacements for the template
         const replacements: Record<string, string> = {
-            serverName: this._server.name,
-            serverDescription: this._server.description || '',
+            serverName: this._schema.name,
+            serverDescription: this._schema.description || '',
             connectionStatus: connectionStatus,
             connectionStatusClass: connectionStatusClass,
             connectionButton: connectionButton,
@@ -426,8 +366,8 @@ export class ServerDetailWebview {
     private _getServerConfigHtml(): string {
         // Get the transport-specific configuration
         let transportConfig = ''
-        if (this._server.transportType === 'stdio') {
-            const stdioConfig = this._server.stdioConfig
+        if (this._schema.transportType === 'stdio') {
+            const stdioConfig = this._schema.stdioConfig
             if (stdioConfig) {
                 transportConfig = `
                     <div class="property">
@@ -447,8 +387,8 @@ export class ServerDetailWebview {
                     }
                 `
             }
-        } else if (this._server.transportType === 'sse') {
-            const sseConfig = this._server.sseConfig
+        } else if (this._schema.transportType === 'sse') {
+            const sseConfig = this._schema.sseConfig
             if (sseConfig) {
                 transportConfig = `
                     <div class="property">
@@ -476,7 +416,7 @@ export class ServerDetailWebview {
                     <button id="edit-server-btn" ${this._isConnected ? 'disabled' : ''} title="${this._isConnected ? 'Disconnect server to edit' : 'Edit server configuration'}">Edit</button>
                 </div>
                 <div class="property">
-                    <span class="property-name">Transport Type:</span> ${this._server.transportType}
+                    <span class="property-name">Transport Type:</span> ${this._schema.transportType}
                 </div>
                 ${transportConfig}
             </div>
@@ -565,7 +505,7 @@ export class ServerDetailWebview {
         }
 
         // If there are no tools, show a message
-        if (this._tools.length === 0) {
+        if (!this._schema.tools || this._schema.tools.length === 0) {
             return `
                 <div class="section">
                     <h2 class="section-title">Tools</h2>
@@ -575,7 +515,7 @@ export class ServerDetailWebview {
         }
 
         // Generate HTML for each tool
-        const toolsHtml = this._tools
+        const toolsHtml = this._schema.tools
             .map(tool => {
                 // Generate parameter inputs
                 const parameterInputs = this._generateParameterInputs(tool)

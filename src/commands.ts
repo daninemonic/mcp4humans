@@ -7,8 +7,21 @@ import * as vscode from 'vscode'
 import { ServerExplorerProvider } from './views/serverExplorerProvider'
 import { ServerDetailWebview } from './webviews/serverDetailWebview'
 import { ServerConfigForm } from './webviews/serverConfigForm'
-import { addServer, updateServer, deleteServer } from './services/storage'
-import { connectToServer, disconnectFromServer, isServerConnected } from './services/mcpClient'
+import { serverViewAdd, storageUpdateServer, storageDeleteServer } from './services/storage'
+import { ServerConfig, ServerSchema } from './models/types'
+import { mcpConnect, mcpDisconnect, mcpIsServerConnected, mcpGetTools } from './services/mcpClient'
+
+// Enum to define mcp4humans commands list
+export enum MCP4HumansCommand {
+    ServerTreeRefresh = 'mcp4humans.serverTreeRefresh',
+    ServerViewAdd = 'mcp4humans.serverViewAdd',
+    ServerViewEdit = 'mcp4humans.serverViewEdit',
+    StorageDeleteServer = 'mcp4humans.storageDeleteServer',
+    MCPConnect = 'mcp4humans.mcpConnect',
+    MCPDisconnect = 'mcp4humans.mcpDisconnect',
+    StorageSaveServer = 'mcp4humans.storageSaveServer',
+    ServerViewDetail = 'mcp4humans.serverViewDetail',
+}
 
 /**
  * Registers all commands for the extension
@@ -20,40 +33,49 @@ export function registerCommands(
     serverExplorerProvider: ServerExplorerProvider
 ): void {
     // Register the refresh command
-    const refreshCommand = vscode.commands.registerCommand('mcp4humans.refreshServerList', () => {
-        serverExplorerProvider.refresh()
-    })
+    const ServerTreeRefreshCommand = vscode.commands.registerCommand(
+        MCP4HumansCommand.ServerTreeRefresh,
+        () => {
+            serverExplorerProvider.refresh()
+        }
+    )
 
     // Register the add server command
-    const addServerCommand = vscode.commands.registerCommand('mcp4humans.addServer', () => {
-        // Open the server configuration form for adding a new server
-        ServerConfigForm.createOrShow(context.extensionUri)
-    })
+    const ServerViewAddCommand = vscode.commands.registerCommand(
+        MCP4HumansCommand.ServerViewAdd,
+        () => {
+            // Open the server configuration form for adding a new server
+            ServerConfigForm.createOrShow(context.extensionUri)
+        }
+    )
 
     // Register the edit server command
-    const editServerCommand = vscode.commands.registerCommand('mcp4humans.editServer', server => {
-        if (server) {
-            // Open the server configuration form for editing an existing server
-            ServerConfigForm.createOrShow(context.extensionUri, server)
+    const ServerViewEditCommand = vscode.commands.registerCommand(
+        MCP4HumansCommand.ServerViewEdit,
+        server => {
+            if (server) {
+                // Open the server configuration form for editing an existing server
+                ServerConfigForm.createOrShow(context.extensionUri, server)
+            }
         }
-    })
+    )
 
     // Register the delete server command
-    const deleteServerCommand = vscode.commands.registerCommand(
-        'mcp4humans.deleteServer',
-        async server => {
-            if (!server) {
+    const StorageDeleteServerCommand = vscode.commands.registerCommand(
+        MCP4HumansCommand.StorageDeleteServer,
+        async (serverName: string) => {
+            if (!serverName) {
                 return
             }
 
             // Make sure it's disconnected
-            await disconnectFromServer(server.name)
+            await mcpDisconnect(serverName)
 
             // Delete the server
-            const response = await deleteServer(context, server.name)
+            const response = await storageDeleteServer(context, serverName)
 
             if (response.success) {
-                vscode.commands.executeCommand('mcp4humans.refreshServerList')
+                vscServerTreeRefresh()
             } else {
                 vscode.window.showErrorMessage(`Failed to delete server: ${response.error}`)
             }
@@ -61,26 +83,31 @@ export function registerCommands(
     )
 
     // Register the open server detail command
-    const openServerDetailCommand = vscode.commands.registerCommand(
-        'mcp4humans.openServerDetail',
-        server => {
+    const ServerViewDetailCommand = vscode.commands.registerCommand(
+        MCP4HumansCommand.ServerViewDetail,
+        (server: ServerSchema) => {
             if (server) {
                 // Create or show the server detail webview
                 ServerDetailWebview.createOrShow(
                     context.extensionUri,
                     server,
-                    isServerConnected(server.name)
+                    mcpIsServerConnected(server.name)
                 )
             }
         }
     )
 
     // Register the connect server command
-    const connectServerCommand = vscode.commands.registerCommand(
-        'mcp4humans.connectServer',
-        async server => {
+    const MCPConnectCommand = vscode.commands.registerCommand(
+        MCP4HumansCommand.MCPConnect,
+        async (server: ServerConfig) => {
             if (!server) {
                 return
+            }
+            let isConnected = false
+            const schema: ServerSchema = {
+                ...server,
+                tools: [],
             }
 
             // Show progress notification
@@ -92,25 +119,34 @@ export function registerCommands(
                 },
                 async () => {
                     // Connect to the server
-                    const response = await connectToServer(server)
+                    const connectResponse = await mcpConnect(server)
 
-                    if (response.success) {
-                        // Update the server detail webview if it's open
-                        if (ServerDetailWebview.currentPanel) {
-                            ServerDetailWebview.currentPanel.update(server, true)
-                        }
-
-                        // Refresh the server explorer to update the connection status
-                        serverExplorerProvider.refresh()
-                    } else {
+                    if (!connectResponse.success) {
                         vscode.window.showErrorMessage(
-                            `Failed to connect to ${server.name}: ${response.error}`
+                            `Failed to connect to ${server.name}: ${connectResponse.error}`
                         )
+                    } else {
+                        // Get tools
+                        const toolsResponse = await mcpGetTools(server.name)
+                        if (!toolsResponse.success && toolsResponse.data) {
+                            vscode.window.showErrorMessage(
+                                `Failed to get tools from ${server.name}: ${connectResponse.error}`
+                            )
+                            // Leave it in disconnected state
+                            await mcpDisconnect(server.name)
+                        } else {
+                            schema.tools = toolsResponse.data!
+                            isConnected = true
 
-                        // Update the server detail webview if it's open
-                        if (ServerDetailWebview.currentPanel) {
-                            ServerDetailWebview.currentPanel.update(server, false)
+                            // Refresh the server explorer to update the connection status
+                            serverExplorerProvider.refresh()
                         }
+                    }
+
+                    // Update thes server detail webview if it exists
+                    const serverPanel = ServerDetailWebview.getPanel(server.name)
+                    if (serverPanel) {
+                        serverPanel.update(schema, isConnected)
                     }
                 }
             )
@@ -118,9 +154,9 @@ export function registerCommands(
     )
 
     // Register the disconnect server command
-    const disconnectServerCommand = vscode.commands.registerCommand(
-        'mcp4humans.disconnectServer',
-        async server => {
+    const MCPDisconnectCommand = vscode.commands.registerCommand(
+        MCP4HumansCommand.MCPDisconnect,
+        async (server: ServerConfig) => {
             if (!server) {
                 return
             }
@@ -134,7 +170,7 @@ export function registerCommands(
                 },
                 async () => {
                     // Disconnect from the server
-                    const response = await disconnectFromServer(server.name)
+                    const response = await mcpDisconnect(server.name)
 
                     if (!response.success) {
                         vscode.window.showErrorMessage(
@@ -143,8 +179,9 @@ export function registerCommands(
                     }
 
                     // Update the server detail webview if it's open
-                    if (ServerDetailWebview.currentPanel) {
-                        ServerDetailWebview.currentPanel.update(server, false)
+                    const serverPanel = ServerDetailWebview.getPanel(server.name)
+                    if (serverPanel) {
+                        serverPanel.update({ ...server, tools: [] } as ServerSchema, false)
                     }
 
                     // Refresh the server explorer to update the connection status
@@ -155,19 +192,19 @@ export function registerCommands(
     )
 
     // Register the save server command
-    const saveServerCommand = vscode.commands.registerCommand(
-        'mcp4humans.saveServer',
-        async (server, isEditing) => {
+    const StorageSaveServerCommand = vscode.commands.registerCommand(
+        MCP4HumansCommand.StorageSaveServer,
+        async (schema: ServerSchema, isEditing) => {
             let response
 
             if (isEditing) {
-                response = await updateServer(context, server)
+                response = await storageUpdateServer(context, schema)
             } else {
-                response = await addServer(context, server)
+                response = await serverViewAdd(context, schema)
             }
 
             if (response.success) {
-                vscode.commands.executeCommand('mcp4humans.refreshServerList')
+                vscServerTreeRefresh()
             } else {
                 vscode.window.showErrorMessage(
                     `Failed to ${isEditing ? 'update' : 'add'} server: ${response.error}`
@@ -178,13 +215,46 @@ export function registerCommands(
 
     // Add all commands to subscriptions
     context.subscriptions.push(
-        refreshCommand,
-        addServerCommand,
-        editServerCommand,
-        deleteServerCommand,
-        openServerDetailCommand,
-        connectServerCommand,
-        disconnectServerCommand,
-        saveServerCommand
+        ServerTreeRefreshCommand,
+        ServerViewAddCommand,
+        ServerViewEditCommand,
+        StorageDeleteServerCommand,
+        ServerViewDetailCommand,
+        MCPConnectCommand,
+        MCPDisconnectCommand,
+        StorageSaveServerCommand
     )
+}
+
+// Create typed interfaces:
+export const vscServerTreeRefresh = () => {
+    vscode.commands.executeCommand(MCP4HumansCommand.ServerTreeRefresh)
+}
+
+export const vscServerViewAdd = () => {
+    vscode.commands.executeCommand(MCP4HumansCommand.ServerViewAdd)
+}
+
+export const vscServerViewEdit = (server: ServerSchema) => {
+    vscode.commands.executeCommand(MCP4HumansCommand.ServerViewEdit, server)
+}
+
+export const vscServerViewDetail = (server: ServerSchema) => {
+    vscode.commands.executeCommand(MCP4HumansCommand.ServerViewDetail, server)
+}
+
+export const vscMCPConnect = (server: ServerConfig) => {
+    vscode.commands.executeCommand(MCP4HumansCommand.MCPConnect, server)
+}
+
+export const vscMCPDisconnect = (server: ServerConfig) => {
+    vscode.commands.executeCommand(MCP4HumansCommand.MCPDisconnect, server)
+}
+
+export const vscStorageSaveServer = (schema: ServerSchema, isEditing: boolean) => {
+    vscode.commands.executeCommand(MCP4HumansCommand.StorageSaveServer, schema, isEditing)
+}
+
+export const vscStorageDeleteServer = (serverName: string) => {
+    vscode.commands.executeCommand(MCP4HumansCommand.StorageDeleteServer, serverName)
 }

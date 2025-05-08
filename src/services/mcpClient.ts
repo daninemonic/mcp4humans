@@ -16,7 +16,7 @@ const activeClients: Record<string, Client> = {}
  * @param serverName The name of the server
  * @returns True if the server is connected, false otherwise
  */
-export function isServerConnected(serverName: string): boolean {
+export function mcpIsServerConnected(serverName: string): boolean {
     return !!activeClients[serverName]
 }
 
@@ -25,11 +25,8 @@ export function isServerConnected(serverName: string): boolean {
  * @param server The server configuration
  * @returns A promise that resolves to an ApiResponse
  */
-export async function connectToServer(server: ServerConfig): Promise<ApiResponse<void>> {
+export async function mcpConnect(server: ServerConfig): Promise<ApiResponse<void>> {
     try {
-        console.log('Connecting to server:', server.name)
-        console.log('Transport type:', server.transportType)
-
         // Create client identity
         const clientIdentity = {
             name: `mcp4humans-vscode-client-for-${server.name}`,
@@ -93,9 +90,6 @@ export async function connectToServer(server: ServerConfig): Promise<ApiResponse
             }
 
             // Create STDIO transport
-            console.log('Creating STDIO transport with command:', server.stdioConfig.cmd)
-            console.log('Arguments:', server.stdioConfig.args)
-            console.log('CWD:', server.stdioConfig.cwd)
 
             // Handle special cases for common commands
             let command = server.stdioConfig.cmd
@@ -115,6 +109,17 @@ export async function connectToServer(server: ServerConfig): Promise<ApiResponse
             // Special handling for python/python3 commands
             // For python, we keep the cwd as is, as it's passed directly to StdioClientTransport
 
+            console.log(
+                'Connecting to STDIO server:',
+                server.name,
+                'command:',
+                command,
+                'args:',
+                args,
+                'cwd:',
+                cwd
+            )
+
             transport = new StdioClientTransport({
                 command: command,
                 args: args,
@@ -130,7 +135,7 @@ export async function connectToServer(server: ServerConfig): Promise<ApiResponse
                 }
             }
 
-            console.log('Connecting to SSE server:', server.sseConfig.url)
+            console.log('Connecting to SSE server:', server.name, 'url:', server.sseConfig.url)
 
             // Create SSE transport
             const sseUrl = new URL(server.sseConfig.url)
@@ -171,7 +176,6 @@ export async function connectToServer(server: ServerConfig): Promise<ApiResponse
         }
 
         // Connect to the server
-        console.log('Connecting to MCP server:', server.name)
         await client.connect(transport, { timeout: 5000 })
         console.log('Connected to MCP server:', server.name)
 
@@ -195,7 +199,7 @@ export async function connectToServer(server: ServerConfig): Promise<ApiResponse
  * @param serverName The name of the server
  * @returns A promise that resolves to an ApiResponse
  */
-export async function disconnectFromServer(serverName: string): Promise<ApiResponse<void>> {
+export async function mcpDisconnect(serverName: string): Promise<ApiResponse<void>> {
     try {
         const client = activeClients[serverName]
         if (!client) {
@@ -206,6 +210,8 @@ export async function disconnectFromServer(serverName: string): Promise<ApiRespo
         }
 
         await client.close()
+        console.log('Disconnected from MCP server:', serverName)
+
         delete activeClients[serverName]
 
         return {
@@ -225,7 +231,7 @@ export async function disconnectFromServer(serverName: string): Promise<ApiRespo
  * @param serverName The name of the server
  * @returns A promise that resolves to an ApiResponse containing the tools
  */
-export async function getToolsList(serverName: string): Promise<ApiResponse<Tool[]>> {
+export async function mcpGetTools(serverName: string): Promise<ApiResponse<Tool[]>> {
     try {
         const client = activeClients[serverName]
         if (!client) {
@@ -364,7 +370,7 @@ function extractParametersFromSchema(schema: any, cleanToolDescription: string):
  * @param params The parameters for the tool
  * @returns A promise that resolves to an ApiResponse containing the result
  */
-export async function executeTool(
+export async function mcpCallTool(
     serverName: string,
     toolName: string,
     params: any
