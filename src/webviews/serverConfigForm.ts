@@ -4,11 +4,11 @@
  * This module provides a webview panel for adding and editing server configurations.
  */
 import * as vscode from 'vscode'
-import { ServerConfig, ServerSchema, TransportType } from '../models/types'
-import { mcpConnect, mcpGetTools, mcpDisconnect } from '../services/mcpClient'
+import { ServerConfig, TransportType } from '../models/types'
 import { jsonConfigParser } from '../services/jsonConfigParser'
 import { getWebviewContent } from '../utils/webviewUtils'
-import { vscServerTreeRefresh, vscServerViewDetail, vscStorageSaveServer } from '../commands'
+import { vscServerViewDetail } from '../commands'
+import { mcpConnectAndBuildSchema } from '../utils/mcpUtils'
 
 /**
  * Class that manages the server configuration form webview panel
@@ -38,7 +38,6 @@ export class ServerConfigForm {
         },
     }
     private _isEditing: boolean = false
-    private _isTesting: boolean = false
     private _validationErrors: Record<string, string> = {}
 
     /**
@@ -182,57 +181,24 @@ export class ServerConfigForm {
      */
     private async _handleConnectAndSave(): Promise<void> {
         // Validate the server configuration
-        const validationErrors = this._validateServer()
+        const validationErrors = this._validateServerConfig()
         if (Object.keys(validationErrors).length > 0) {
             this._validationErrors = validationErrors
             this._update()
             return
         }
 
-        // Connect to the server
-        this._isTesting = true
-        this._update()
+        // Connects to the server and handles all storage and UI updates
+        const schema = await mcpConnectAndBuildSchema(this._config, !this._isEditing)
+        if (schema) {
+            // Open detail window to show it's configured and connected
+            vscServerViewDetail(schema)
 
-        const connectResponse = await mcpConnect(this._config)
-        if (!connectResponse.success) {
-            this._isTesting = false
-            vscode.window.showErrorMessage(`Failed to connect to server: ${connectResponse.error}`)
+            // Close the form
+            this._panel.dispose()
+        } else {
             this._update()
-            return
         }
-
-        // Test getting tools
-        const toolsResponse = await mcpGetTools(this._config.name)
-        if (!toolsResponse.success || !toolsResponse.data) {
-            this._isTesting = false
-            vscode.window.showErrorMessage(
-                `Failed to get tools from server: ${toolsResponse.error}`
-            )
-
-            // Make sure it's disconnected
-            await mcpDisconnect(this._config.name)
-            this._update()
-            return
-        }
-
-        this._isTesting = false
-        const tools = toolsResponse.data
-        const schema: ServerSchema = {
-            ...this._config,
-            tools,
-        }
-
-        // Save the server configuration
-        vscStorageSaveServer(schema, !this._isEditing)
-
-        // Refresh the server list
-        vscServerTreeRefresh()
-
-        // Open detail window to show it's configured and connected
-        vscServerViewDetail(schema)
-
-        // Close the form
-        this._panel.dispose()
     }
 
     /**
@@ -259,7 +225,7 @@ export class ServerConfigForm {
      * Validate the server configuration
      * @returns Validation errors
      */
-    private _validateServer(): Record<string, string> {
+    private _validateServerConfig(): Record<string, string> {
         const errors: Record<string, string> = {}
 
         if (!this._config.name) {
@@ -385,13 +351,6 @@ export class ServerConfigForm {
                 : '',
             sseUrlError: this._validationErrors['sseConfig.url']
                 ? `<div class="error">${this._validationErrors['sseConfig.url']}</div>`
-                : '',
-            loadingSpinner: this._isTesting
-                ? `
-                <div class="loading">
-                    <div class="spinner"></div>
-                </div>
-            `
                 : '',
         }
 

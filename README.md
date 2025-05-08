@@ -29,6 +29,7 @@ The Model Context Protocol (MCP) is an open standard for AI tools and agents to 
 - Browse available tools from connected MCP servers
 - Execute tools with a simple form interface
 - View tool execution results in a collapsible panel
+- Work with multiple servers in parallel
 
 ![Tool Execution Interface](images/tool-execution.png)
 
