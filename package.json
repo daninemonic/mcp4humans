@@ -2,7 +2,7 @@
     "name": "mcp4humans",
     "displayName": "MCP4Humans",
     "description": "User-friendly client for Model Context Protocol (MCP) servers - connect, manage, and execute MCP tools directly in VS Code",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "publisher": "daninemonic",
     "author": {
         "name": "Model Context Protocol Team"
@@ -150,7 +150,7 @@
         "lint": "eslint src",
         "test": "vscode-test",
         "vsix:build": "vsce package",
-        "vsix:install": "code --install-extension mcp4humans-*.vsix || echo 'Manual installation required: Open VS Code → Extensions → ... → Install from VSIX'",
+        "vsix:install": "code --install-extension mcp4humans-*.vsix",
         "vsix:publish": "vsce publish"
     },
     "dependencies": {

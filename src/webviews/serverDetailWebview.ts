@@ -15,6 +15,15 @@ import {
 } from '../commands'
 
 /**
+ * Tab types for the server detail view
+ */
+enum TabType {
+    SETTINGS = 'settings',
+    TOOLS = 'tools',
+    LOG = 'log',
+}
+
+/**
  * Class that manages the server detail webview panel
  */
 export class ServerDetailWebview {
@@ -30,6 +39,7 @@ export class ServerDetailWebview {
     private _schema: ServerSchema
     private _isConnected: boolean = false
     private _isLoading: boolean = false
+    private _activeTab: TabType = TabType.SETTINGS
 
     /**
      * Get the static view type for the webview panel
@@ -107,6 +117,13 @@ export class ServerDetailWebview {
         this._schema = schema
         this._isConnected = isConnected
 
+        // Select initial tab based on connection status
+        if (isConnected) {
+            this._activeTab = TabType.TOOLS
+        } else {
+            this._activeTab = TabType.SETTINGS
+        }
+
         // Set the webview's initial html content
         this._update()
 
@@ -145,6 +162,9 @@ export class ServerDetailWebview {
                     case 'callMCPTool':
                         this._handleExecuteTool(message.toolName, message.params)
                         return
+                    case 'tabChanged':
+                        this._handleTabChange(message.tab as TabType)
+                        return
                 }
             },
             null,
@@ -162,6 +182,16 @@ export class ServerDetailWebview {
         this._isConnected = isConnected
         this._panel.title = `Server: ${schema.name}`
         this._update()
+    }
+
+    /**
+     * Handle tab change event from the webview
+     * @param tabId The ID of the tab to switch to
+     */
+    private _handleTabChange(tabId: TabType): void {
+        this._activeTab = tabId
+        // No need to call _update() as this is just tracking the state
+        // The UI is already updated in the webview
     }
 
     /**
@@ -339,6 +369,11 @@ export class ServerDetailWebview {
         // Get the tools section
         const toolsSection = this._getToolsSectionHtml()
 
+        // Determine which tab should be active
+        const settingsTabActive = this._activeTab === TabType.SETTINGS ? 'active' : ''
+        const toolsTabActive = this._activeTab === TabType.TOOLS ? 'active' : ''
+        const logTabActive = this._activeTab === TabType.LOG ? 'active' : ''
+
         // Prepare replacements for the template
         const replacements: Record<string, string> = {
             serverName: this._schema.name,
@@ -348,6 +383,10 @@ export class ServerDetailWebview {
             connectionButton: connectionButton,
             serverDetails: serverDetails,
             toolsSection: toolsSection,
+            settingsTabActive: settingsTabActive,
+            toolsTabActive: toolsTabActive,
+            logTabActive: logTabActive,
+            initialActiveTab: this._activeTab,
         }
 
         // Get the HTML content using the template
@@ -486,8 +525,7 @@ export class ServerDetailWebview {
         if (!this._isConnected) {
             return `
                 <div class="section">
-                    <h2 class="section-title">Tools</h2>
-                    <p>Connect to the server to view available tools.</p>
+                    <p class="tab-empty-message">Please connect to the server to access tools.</p>
                 </div>
             `
         }
@@ -496,7 +534,6 @@ export class ServerDetailWebview {
         if (this._isLoading) {
             return `
                 <div class="section">
-                    <h2 class="section-title">Tools</h2>
                     <div class="loading">
                         <div class="spinner"></div>
                     </div>
@@ -508,7 +545,6 @@ export class ServerDetailWebview {
         if (!this._schema.tools || this._schema.tools.length === 0) {
             return `
                 <div class="section">
-                    <h2 class="section-title">Tools</h2>
                     <p>No tools available for this server.</p>
                 </div>
             `
@@ -556,7 +592,6 @@ export class ServerDetailWebview {
         // Return the tools section
         return `
             <div class="section">
-                <h2 class="section-title">Tools</h2>
                 ${toolsHtml}
             </div>
         `

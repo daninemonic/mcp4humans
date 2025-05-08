@@ -2,6 +2,12 @@
 
 All notable changes to the "MCP4Humans" extension will be documented in this file.
 
+## [1.0.4] - 2024-05-08
+
+### Added
+
+- Server settings view converted into tab view to separate settings and tools
+
 ## [1.0.3] - 2024-05-08
 
 ### Added

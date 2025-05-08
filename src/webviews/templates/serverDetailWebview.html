@@ -389,6 +389,50 @@
             justify-content: flex-end;
             margin-top: 20px;
         }
+
+        /* Tab styles */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+        }
+
+        .tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            margin-right: 4px;
+            border-radius: 4px 4px 0 0;
+            background-color: transparent;
+            color: var(--vscode-foreground);
+        }
+
+        .tab:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .tab.active {
+            background-color: rgba(0, 0, 0, 0.1);
+            border-color: var(--vscode-panel-border);
+            border-bottom: 1px solid var(--vscode-editor-background);
+            margin-bottom: -1px;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-empty-message {
+            padding: 20px;
+            text-align: left;
+            color: var(--vscode-descriptionForeground);
+        }
     </style>
 </head>
 
@@ -405,12 +449,28 @@
         </div>
     </div>
 
-    ${serverDetails}
+    <div class="tabs">
+        <div class="tab ${settingsTabActive}" data-tab="settings">Settings</div>
+        <div class="tab ${toolsTabActive}" data-tab="tools">Tools</div>
+        <div class="tab ${logTabActive}" data-tab="log">Log</div>
+    </div>
 
-    ${toolsSection}
+    <div id="settings-tab" class="tab-content ${settingsTabActive}">
+        ${serverDetails}
 
-    <div class="delete-button-div">
-        <button id="delete-server-btn" class="delete-button">Delete Server</button>
+        <div class="delete-button-div">
+            <button id="delete-server-btn" class="delete-button">Delete Server</button>
+        </div>
+    </div>
+
+    <div id="tools-tab" class="tab-content ${toolsTabActive}">
+        ${toolsSection}
+    </div>
+
+    <div id="log-tab" class="tab-content ${logTabActive}">
+        <div class="section">
+            <p class="tab-empty-message">Log functionality will be added in a future update.</p>
+        </div>
     </div>
 
     <div id="delete-confirmation-modal" class="modal">
@@ -428,8 +488,52 @@
     <script>
         const vscode = acquireVsCodeApi();
 
-        // Handle connect/disconnect button clicks
+        // Get the current state from storage or initialize it
+        const state = vscode.getState() || { activeTab: '${initialActiveTab}' };
+
+        // Function to switch tabs
+        function switchTab(tabId) {
+            // Update active tab in state
+            state.activeTab = tabId;
+            vscode.setState(state);
+
+            // Remove active class from all tabs and tab contents
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Add active class to selected tab and content
+            document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+
+            // Notify the extension about the tab change
+            vscode.postMessage({
+                command: 'tabChanged',
+                tab: tabId
+            });
+        }
+
+        // Initialize tabs based on saved state
+        document.addEventListener('DOMContentLoaded', () => {
+            // If we have a saved active tab, switch to it
+            if (state.activeTab) {
+                switchTab(state.activeTab);
+            }
+        });
+
+        // Handle connect/disconnect button clicks and tab switching
         document.addEventListener('click', (e) => {
+            // Handle tab clicks
+            if (e.target.classList.contains('tab')) {
+                const tabId = e.target.getAttribute('data-tab');
+                switchTab(tabId);
+                return;
+            }
+
+            // Handle other button clicks
             if (e.target.classList.contains('connect-button')) {
                 vscode.postMessage({ command: 'connect' });
             } else if (e.target.classList.contains('disconnect-button')) {
