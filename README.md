@@ -90,6 +90,55 @@ MCP4Humans also supports remote MCP servers that communicate via Server-Sent Eve
 
 This extension is licensed under the MIT License. See the LICENSE file for details.
 
+## Development
+
+If you want to contribute to the development of MCP4Humans, follow these steps:
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/daninemonic/mcp4humans.git
+   cd mcp4humans
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+3. Build and watch for changes:
+
+   ```bash
+   npm run watch
+   ```
+
+4. Launch the extension in debug mode:
+   - Press F5 in VS Code to start a new window with the extension loaded
+
+### Testing and Publishing
+
+The extension includes several npm scripts to help with testing and publishing:
+
+- **Build VSIX package**:
+
+  ```bash
+  npm run vsix:build
+  ```
+
+  This creates a `.vsix` file that can be installed in VS Code.
+
+- **Install VSIX package** (requires VS Code in PATH):
+
+  ```bash
+  npm run vsix:install
+  ```
+
+  If the command fails, you can manually install the VSIX file in VS Code:
+  - Go to Extensions view (Ctrl+Shift+X / Cmd+Shift+X)
+  - Click "..." at the top of the Extensions view
+  - Select "Install from VSIX..." and choose the generated .vsix file
+
 ---
 
 **Enjoy using MCP4Humans!**

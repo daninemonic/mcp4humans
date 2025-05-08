@@ -49,10 +49,6 @@ export class ServerDetailWebview {
         // it's a different server we need to get the tools again
         if (ServerDetailWebview.currentPanel) {
             ServerDetailWebview.currentPanel._panel.reveal(column)
-            // If the server is connected, load the tools for the new server
-            if (isConnected && ServerDetailWebview.currentPanel._server.name !== server.name) {
-                ServerDetailWebview.currentPanel._loadTools()
-            }
             ServerDetailWebview.currentPanel.update(server, isConnected)
             return ServerDetailWebview.currentPanel
         }
@@ -153,16 +149,26 @@ export class ServerDetailWebview {
      * @param server The server configuration
      * @param isConnected Whether the server is connected
      */
-    public update(server: ServerConfig, isConnected: boolean): void {
+    public async update(server: ServerConfig, isConnected: boolean): Promise<void> {
+        const prevServer = this._server.name
+        const prevConnected = this._isConnected
+
         this._server = server
-
-        // If the connection status changed from disconnected to connected, load the tools
-        if (!this._isConnected && isConnected) {
-            this._loadTools()
-        }
-
         this._isConnected = isConnected
         this._panel.title = `Server: ${server.name}`
+
+        if (isConnected) {
+            if (!prevConnected || prevServer !== server.name) {
+                // Show loading state
+                this._isLoading = true
+                this._update()
+
+                // Wait for tools to load
+                await this._loadTools()
+                return
+            }
+        }
+
         this._update()
     }
 
@@ -272,7 +278,7 @@ export class ServerDetailWebview {
                 const content = data.content[0]
 
                 // Check if the response contains an error flag
-                const isError = content.isError === true
+                const isError = data.isError === true
 
                 // Handle different content types
                 if (content.type === 'image' && content.data && content.mimeType) {
@@ -289,19 +295,37 @@ export class ServerDetailWebview {
                     // Text content - try to parse as JSON if possible
                     try {
                         const jsonData = JSON.parse(content.text)
+
+                        let failed = isError
+
+                        // Check if json contains status=error
+                        if ('status' in jsonData) {
+                            const status = String(jsonData.status).toLowerCase()
+
+                            if (status === 'error') {
+                                failed = true
+                            }
+                        }
+
                         this._panel.webview.postMessage({
                             command: 'toolResult',
                             toolName: toolName,
-                            resultType: isError ? 'failed' : 'success',
+                            resultType: failed ? 'failed' : 'success',
                             contentType: 'json',
                             data: jsonData,
                         })
                     } catch (e) {
                         // Not valid JSON, send as text
+                        // Check if text starts with "error"
+                        let failed = isError
+                        if (content.text.toLowerCase().startsWith('error')) {
+                            failed = true
+                        }
+
                         this._panel.webview.postMessage({
                             command: 'toolResult',
                             toolName: toolName,
-                            resultType: isError ? 'failed' : 'success',
+                            resultType: failed ? 'failed' : 'success',
                             contentType: 'text',
                             data: content.text,
                         })
@@ -318,10 +342,22 @@ export class ServerDetailWebview {
                 }
             } else {
                 // Regular response format (not MCP content format)
+                console.log('Regular response format:', JSON.stringify(data))
+
+                // Check if the response has a status field with value "error"
+                let resultType = 'success'
+                if (data && typeof data === 'object' && 'status' in data) {
+                    console.log('Status field found in regular response:', data.status)
+                    if (String(data.status).toLowerCase() === 'error') {
+                        console.log('Setting resultType to failed due to status=error')
+                        resultType = 'failed'
+                    }
+                }
+
                 this._panel.webview.postMessage({
                     command: 'toolResult',
                     toolName: toolName,
-                    resultType: 'success',
+                    resultType: resultType,
                     contentType: 'raw',
                     data: data,
                 })
