@@ -45,9 +45,14 @@ export class ServerDetailWebview {
             ? vscode.window.activeTextEditor.viewColumn
             : undefined
 
-        // If we already have a panel, show it
+        // If we already have a panel, reuse it but keep in mind that if
+        // it's a different server we need to get the tools again
         if (ServerDetailWebview.currentPanel) {
             ServerDetailWebview.currentPanel._panel.reveal(column)
+            // If the server is connected, load the tools for the new server
+            if (isConnected && ServerDetailWebview.currentPanel._server.name !== server.name) {
+                ServerDetailWebview.currentPanel._loadTools()
+            }
             ServerDetailWebview.currentPanel.update(server, isConnected)
             return ServerDetailWebview.currentPanel
         }
@@ -248,19 +253,86 @@ export class ServerDetailWebview {
             // Execute the tool
             const response = await executeTool(this._server.name, toolName, params)
 
-            // Update the tool result in the UI
-            this._panel.webview.postMessage({
-                command: 'toolResult',
-                toolName: toolName,
-                success: response.success,
-                data: response.success ? response.data : response.error,
-            })
+            if (!response.success) {
+                // Error case - tool execution failed
+                this._panel.webview.postMessage({
+                    command: 'toolResult',
+                    toolName: toolName,
+                    resultType: 'error',
+                    data: response.error,
+                })
+                return
+            }
+
+            // Process the successful response
+            const data = response.data
+
+            // Check if the response has the MCP content format
+            if (data && data.content && Array.isArray(data.content) && data.content.length > 0) {
+                const content = data.content[0]
+
+                // Check if the response contains an error flag
+                const isError = content.isError === true
+
+                // Handle different content types
+                if (content.type === 'image' && content.data && content.mimeType) {
+                    // Image content
+                    this._panel.webview.postMessage({
+                        command: 'toolResult',
+                        toolName: toolName,
+                        resultType: isError ? 'failed' : 'success',
+                        contentType: 'image',
+                        mimeType: content.mimeType,
+                        data: content.data,
+                    })
+                } else if (content.type === 'text' && content.text !== undefined) {
+                    // Text content - try to parse as JSON if possible
+                    try {
+                        const jsonData = JSON.parse(content.text)
+                        this._panel.webview.postMessage({
+                            command: 'toolResult',
+                            toolName: toolName,
+                            resultType: isError ? 'failed' : 'success',
+                            contentType: 'json',
+                            data: jsonData,
+                        })
+                    } catch (e) {
+                        // Not valid JSON, send as text
+                        this._panel.webview.postMessage({
+                            command: 'toolResult',
+                            toolName: toolName,
+                            resultType: isError ? 'failed' : 'success',
+                            contentType: 'text',
+                            data: content.text,
+                        })
+                    }
+                } else {
+                    // Unknown or unhandled content type, send the raw data
+                    this._panel.webview.postMessage({
+                        command: 'toolResult',
+                        toolName: toolName,
+                        resultType: isError ? 'failed' : 'success',
+                        contentType: 'raw',
+                        data: data,
+                    })
+                }
+            } else {
+                // Regular response format (not MCP content format)
+                this._panel.webview.postMessage({
+                    command: 'toolResult',
+                    toolName: toolName,
+                    resultType: 'success',
+                    contentType: 'raw',
+                    data: data,
+                })
+            }
         } catch (error) {
             // Handle errors
             this._panel.webview.postMessage({
                 command: 'toolResult',
                 toolName: toolName,
-                success: false,
+                resultType: 'error',
+                contentType: 'text',
                 data: error instanceof Error ? error.message : String(error),
             })
         }

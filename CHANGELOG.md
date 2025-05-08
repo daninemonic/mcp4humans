@@ -2,6 +2,19 @@
 
 All notable changes to the "MCP4Humans" extension will be documented in this file.
 
+## [1.0.2] - 2024-05-07
+
+### Added
+
+- Enhanced tool response handling with support for different content types
+- Added support for displaying images in tool responses
+- Added a new "Failed" state for tools that return errors in their response
+
+### Fixed
+
+- Fixed bug where tools weren't reloaded when switching between servers in an already open panel
+- Improved JSON response handling to extract and display the actual content
+
 ## [1.0.1] - 2024-05-07
 
 ### Fixed

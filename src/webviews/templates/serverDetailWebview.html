@@ -286,6 +286,24 @@
             background-color: var(--vscode-scrollbarSlider-hoverBackground);
         }
 
+        .result-image {
+            max-width: 100%;
+            max-height: 300px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: block;
+        }
+
+        .result-header.failed {
+            border-left: 4px solid var(--vscode-notificationsWarningIcon-foreground);
+        }
+
+        .result-status-text.failed {
+            font-weight: bold;
+            margin: 2px;
+            color: var(--vscode-notificationsWarningIcon-foreground);
+        }
+
         .loading-spinner {
             display: inline-block;
             width: 10px;
@@ -528,8 +546,10 @@
 
             if (message.command === 'toolResult') {
                 const toolName = message.toolName;
-                const success = message.success;
+                const resultType = message.resultType || 'success'; // success, error, or failed
+                const contentType = message.contentType || 'raw'; // raw, text, json, or image
                 const data = message.data;
+                const mimeType = message.mimeType; // for images
 
                 // Find the tool card
                 const toolCard = document.getElementById(`tool-${toolName}`);
@@ -556,18 +576,59 @@
                 // Show the result container
                 resultContainer.classList.remove('hidden');
 
-                // Update the header
-                resultHeader.className = 'result-header ' + (success ? 'success' : 'error');
-                resultStatusIcon.textContent = success ? '✓' : '✗';
-                resultStatusIcon.className = 'result-status-text ' + (success ? 'success' : 'error');
-                resultStatusText.textContent = success ? 'Success' : 'Error';
-                resultStatusText.className = 'result-status-text ' + (success ? 'success' : 'error');
+                // Update the header based on result type
+                resultHeader.className = 'result-header ' + resultType;
 
-                // Format the result as JSON
-                const resultJson = JSON.stringify(data, null, 2);
+                // Set status icon and text based on result type
+                let statusIcon = '✓';
+                let statusText = 'Success';
 
-                // Display the full result
-                resultText.textContent = resultJson;
+                if (resultType === 'error') {
+                    statusIcon = '✗';
+                    statusText = 'Error';
+                } else if (resultType === 'failed') {
+                    statusIcon = '⚠';
+                    statusText = 'Failed';
+                }
+
+                resultStatusIcon.textContent = statusIcon;
+                resultStatusIcon.className = 'result-status-text ' + resultType;
+                resultStatusText.textContent = statusText;
+                resultStatusText.className = 'result-status-text ' + resultType;
+
+                // Clear previous content
+                resultText.textContent = '';
+
+                // Remove any existing images
+                const existingImage = resultContent.querySelector('.result-image');
+                if (existingImage) {
+                    existingImage.remove();
+                }
+
+                // Handle different content types
+                if (contentType === 'image' && data) {
+                    // Create and display an image
+                    const img = document.createElement('img');
+                    img.src = `data:${mimeType};base64,${data}`;
+                    img.className = 'result-image';
+                    img.alt = 'Tool result image';
+
+                    // Replace the pre element with the image
+                    resultText.style.display = 'none';
+                    resultContent.appendChild(img);
+                } else if (contentType === 'text') {
+                    // Display text with line breaks
+                    resultText.style.display = 'block';
+                    resultText.textContent = data;
+                } else if (contentType === 'json' || contentType === 'raw') {
+                    // Format as JSON
+                    resultText.style.display = 'block';
+                    resultText.textContent = JSON.stringify(data, null, 2);
+                } else {
+                    // Default fallback
+                    resultText.style.display = 'block';
+                    resultText.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+                }
 
                 // Close the result content
                 resultContent.classList.remove('open');
