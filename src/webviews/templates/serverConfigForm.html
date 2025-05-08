@@ -190,6 +190,8 @@
 <body>
     <div class="header">
         <h1 class="title">${title}</h1>
+        <!-- Hidden timestamp to force refresh when content is identical -->
+        <input type="hidden" id="refresh-timestamp" value="${timestamp}" />
     </div>
 
     <div class="section">

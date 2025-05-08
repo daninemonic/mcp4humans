@@ -12,9 +12,7 @@ import { ServerConfig, ApiResponse, TransportType } from '../models/types'
  */
 export function parseJsonConfig(jsonString: string): ApiResponse<ServerConfig> {
     try {
-        console.log('Parsing JSON string:', jsonString)
         const parsedJson = JSON.parse(jsonString)
-        console.log('Parsed config:', parsedJson)
 
         // Initialize server config with default values
         const serverConfig: ServerConfig = {
@@ -38,9 +36,9 @@ export function parseJsonConfig(jsonString: string): ApiResponse<ServerConfig> {
             }
             for (const [key, value] of Object.entries(data)) {
                 // We can use fullKey for debugging if needed
-                // const fullKey = parentKey ? `${parentKey}.${key}` : key;
+                // const fullKey = parentKey ? `${parentKey}.${key}` : key
 
-                if (key === 'command' || key === 'cmd') {
+                if ((key === 'command' || key === 'cmd') && typeof value === 'string') {
                     serverConfig.stdioConfig.cmd = value
                     // If name is not set, use parent of cmd as name
                     if (serverConfig.name === '' && parentKey) {
@@ -48,6 +46,13 @@ export function parseJsonConfig(jsonString: string): ApiResponse<ServerConfig> {
                     }
                 } else if (key === 'cwd') {
                     serverConfig.stdioConfig.cwd = value
+                } else if (
+                    // command.path is another format for cmd
+                    key === 'path' &&
+                    parentKey === 'command' &&
+                    serverConfig.stdioConfig.cmd === ''
+                ) {
+                    serverConfig.stdioConfig.cmd = value
                 } else if (key === 'arguments' || key === 'args') {
                     serverConfig.stdioConfig.args = value
                 } else if (key === 'environment' || key === 'env') {
@@ -56,21 +61,22 @@ export function parseJsonConfig(jsonString: string): ApiResponse<ServerConfig> {
                     serverConfig.description = value
                 } else if (key === 'name') {
                     serverConfig.name = value
-                } else if (key === 'transportType') {
-                    if (value === TransportType.SSE || value === TransportType.STDIO) {
-                        serverConfig.transportType = value
-                    }
-                } else if (key === 'url') {
+                } else if (typeof value === 'string' && value.startsWith('http')) {
+                    // value that starts with http should be url
                     if (!serverConfig.sseConfig) {
                         serverConfig.sseConfig = { url: value }
                     } else {
                         serverConfig.sseConfig.url = value
                     }
+                    // switch to sse type
                     serverConfig.transportType = TransportType.SSE
-                    // If name is not set, use parent of url as name
+                    // If name is not set, use parent as name
                     if (serverConfig.name === '' && parentKey) {
                         serverConfig.name = parentKey
                     }
+                } else if (value === TransportType.SSE || value === TransportType.STDIO) {
+                    // any key with sse or stdio is transport type
+                    serverConfig.transportType = value
                 } else if (key === 'headers') {
                     if (!serverConfig.sseConfig) {
                         serverConfig.sseConfig = { url: '', headers: value }
@@ -78,6 +84,7 @@ export function parseJsonConfig(jsonString: string): ApiResponse<ServerConfig> {
                         serverConfig.sseConfig.headers = value
                     }
                 } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                    // Recursively process nested objects
                     processConfigData(value, key)
                 }
             }
@@ -85,8 +92,6 @@ export function parseJsonConfig(jsonString: string): ApiResponse<ServerConfig> {
 
         // Process the configuration data
         processConfigData(parsedJson)
-
-        console.log('Processed config:', JSON.stringify(serverConfig, null, 2))
 
         // Validate the configuration
         try {

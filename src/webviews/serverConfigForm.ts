@@ -370,6 +370,8 @@ export class ServerConfigForm {
             sseUrl: this._server.sseConfig?.url || '',
             sseHeaders: sseHeaders,
             hasHeaders: hasHeaders ? 'true' : 'false',
+            // Add a timestamp to force the webview to refresh even when content is identical
+            timestamp: Date.now().toString(),
             nameError: this._validationErrors.name
                 ? `<div class="error">${this._validationErrors.name}</div>`
                 : '',
