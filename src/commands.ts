@@ -8,7 +8,7 @@ import { ServerExplorerProvider } from './views/serverExplorerProvider'
 import { ServerDetailWebview } from './webviews/serverDetailWebview'
 import { ServerConfigForm } from './webviews/serverConfigForm'
 import { addServer, updateServer, deleteServer } from './services/storage'
-import { connectToServer, disconnectFromServer } from './services/mcpClient'
+import { connectToServer, disconnectFromServer, isServerConnected } from './services/mcpClient'
 
 /**
  * Registers all commands for the extension
@@ -66,7 +66,11 @@ export function registerCommands(
         server => {
             if (server) {
                 // Create or show the server detail webview
-                ServerDetailWebview.createOrShow(context.extensionUri, server, false)
+                ServerDetailWebview.createOrShow(
+                    context.extensionUri,
+                    server,
+                    isServerConnected(server.name)
+                )
             }
         }
     )

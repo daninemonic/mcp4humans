@@ -21,7 +21,21 @@ export class ServerConfigForm {
     private readonly _panel: vscode.WebviewPanel
     private readonly _extensionUri: vscode.Uri
     private _disposables: vscode.Disposable[] = []
-    private _server?: ServerConfig
+    private _server: ServerConfig = {
+        name: '',
+        description: '',
+        transportType: TransportType.STDIO,
+        stdioConfig: {
+            cmd: '',
+            args: [],
+            cwd: '',
+            environment: {},
+        },
+        sseConfig: {
+            url: '',
+            headers: {},
+        },
+    }
     private _isEditing: boolean = false
     private _isTesting: boolean = false
     private _validationErrors: Record<string, string> = {}
@@ -37,20 +51,31 @@ export class ServerConfigForm {
      * @param server The server configuration (if editing)
      */
     public static createOrShow(extensionUri: vscode.Uri, server?: ServerConfig): ServerConfigForm {
+        const _isEditing = !!server
+        const serverConfig = server || {
+            name: '',
+            description: '',
+            transportType: TransportType.STDIO,
+            stdioConfig: {
+                cmd: '',
+                args: [],
+                cwd: '',
+                environment: {},
+            },
+            sseConfig: {
+                url: '',
+                headers: {},
+            },
+        }
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined
 
         // If we already have a panel, show it
         if (ServerConfigForm.currentPanel) {
+            ServerConfigForm.currentPanel._server = serverConfig
+            ServerConfigForm.currentPanel._isEditing = _isEditing
             ServerConfigForm.currentPanel._panel.reveal(column)
-            if (server) {
-                ServerConfigForm.currentPanel._server = server
-                ServerConfigForm.currentPanel._isEditing = true
-            } else {
-                ServerConfigForm.currentPanel._server = undefined
-                ServerConfigForm.currentPanel._isEditing = false
-            }
             ServerConfigForm.currentPanel._update()
             return ServerConfigForm.currentPanel
         }
@@ -58,7 +83,7 @@ export class ServerConfigForm {
         // Otherwise, create a new panel
         const panel = vscode.window.createWebviewPanel(
             ServerConfigForm.viewType,
-            server ? `Edit Server: ${server.name}` : 'Add Server',
+            _isEditing ? `Edit Server: ${server.name}` : 'Add Server',
             column || vscode.ViewColumn.One,
             {
                 // Enable JavaScript in the webview
@@ -70,7 +95,12 @@ export class ServerConfigForm {
             }
         )
 
-        ServerConfigForm.currentPanel = new ServerConfigForm(panel, extensionUri, server)
+        ServerConfigForm.currentPanel = new ServerConfigForm(
+            panel,
+            extensionUri,
+            serverConfig,
+            _isEditing
+        )
         return ServerConfigForm.currentPanel
     }
 
@@ -83,12 +113,13 @@ export class ServerConfigForm {
     private constructor(
         panel: vscode.WebviewPanel,
         extensionUri: vscode.Uri,
-        server?: ServerConfig
+        server: ServerConfig,
+        isEditing: boolean
     ) {
         this._panel = panel
         this._extensionUri = extensionUri
         this._server = server
-        this._isEditing = !!server
+        this._isEditing = isEditing
 
         // Set the webview's initial html content
         this._update()
@@ -113,13 +144,12 @@ export class ServerConfigForm {
             async message => {
                 switch (message.command) {
                     case 'connectAndSave':
-                        await this._handleConnectAndSave(message.server)
+                        // Replace server data with html form data
+                        this._server = message.server
+                        await this._handleConnectAndSave()
                         return
                     case 'parseJson':
                         this._handleParseJson(message.json)
-                        return
-                    case 'cancel':
-                        this._panel.dispose()
                         return
                 }
             },
@@ -149,9 +179,9 @@ export class ServerConfigForm {
      * Handle connecting to and saving the server configuration
      * @param server The server configuration to save
      */
-    private async _handleConnectAndSave(server: ServerConfig): Promise<void> {
+    private async _handleConnectAndSave(): Promise<void> {
         // Validate the server configuration
-        const validationErrors = this._validateServer(server)
+        const validationErrors = this._validateServer()
         if (Object.keys(validationErrors).length > 0) {
             this._validationErrors = validationErrors
             this._update()
@@ -162,20 +192,16 @@ export class ServerConfigForm {
         this._isTesting = true
         this._update()
 
-        const connectResponse = await connectToServer(server)
+        const connectResponse = await connectToServer(this._server)
         if (!connectResponse.success) {
             this._isTesting = false
             vscode.window.showErrorMessage(`Failed to connect to server: ${connectResponse.error}`)
             this._update()
-
-            // Keep the form open with current values
-            this._server = server
-
             return
         }
 
         // Test getting tools
-        const toolsResponse = await getToolsList(server.name)
+        const toolsResponse = await getToolsList(this._server.name)
         if (!toolsResponse.success) {
             this._isTesting = false
             vscode.window.showErrorMessage(
@@ -183,10 +209,7 @@ export class ServerConfigForm {
             )
 
             // Make sure it's disconnected
-            await disconnectFromServer(server.name)
-
-            // Keep the form open with current values
-            this._server = server
+            await disconnectFromServer(this._server.name)
             this._update()
             return
         }
@@ -194,13 +217,13 @@ export class ServerConfigForm {
         this._isTesting = false
 
         // Save the server configuration
-        vscode.commands.executeCommand('mcp4humans.saveServer', server, this._isEditing)
+        vscode.commands.executeCommand('mcp4humans.saveServer', this._server, this._isEditing)
 
         // Refresh the server list
         vscode.commands.executeCommand('mcp4humans.refreshServerList')
 
-        // Keep the server connected
-        vscode.commands.executeCommand('mcp4humans.connectServer', server)
+        // Open detail window to show it's configured and connected
+        vscode.commands.executeCommand('mcp4humans.openServerDetail', this._server)
 
         // Close the form
         this._panel.dispose()
@@ -228,36 +251,44 @@ export class ServerConfigForm {
 
     /**
      * Validate the server configuration
-     * @param server The server configuration to validate
      * @returns Validation errors
      */
-    private _validateServer(server: ServerConfig): Record<string, string> {
+    private _validateServer(): Record<string, string> {
         const errors: Record<string, string> = {}
 
-        if (!server.name) {
+        if (!this._server.name) {
             errors.name = 'Server name is required'
         }
 
-        if (!server.transportType) {
+        if (!this._server.transportType) {
             errors.transportType = 'Transport type is required'
         }
 
-        if (server.transportType === TransportType.STDIO) {
-            if (!server.stdioConfig) {
+        if (this._server.transportType === TransportType.STDIO) {
+            if (!this._server.stdioConfig) {
                 errors.stdioConfig = 'STDIO configuration is required'
             } else {
-                if (!server.stdioConfig.cmd) {
+                if (!this._server.stdioConfig.cmd) {
                     errors['stdioConfig.cmd'] = 'Command is required'
+                } else if (!this._server.stdioConfig.args) {
+                    errors['stdioConfig.args'] = 'Arguments are required'
                 }
             }
         }
 
-        if (server.transportType === TransportType.SSE) {
-            if (!server.sseConfig) {
+        if (this._server.transportType === TransportType.SSE) {
+            if (!this._server.sseConfig) {
                 errors.sseConfig = 'SSE configuration is required'
             } else {
-                if (!server.sseConfig.url) {
+                if (!this._server.sseConfig.url) {
                     errors['sseConfig.url'] = 'URL is required'
+                } else {
+                    // Validate URL format
+                    const urlRegex = /^(http|https):\/\/[a-zA-Z0-9.-]+:[0-9]+\/sse$/
+                    if (!urlRegex.test(this._server.sseConfig.url)) {
+                        errors['sseConfig.url'] =
+                            'Invalid SSE URL format. Expected: http[s]://{host}:{port}/sse'
+                    }
                 }
             }
         }
@@ -279,28 +310,16 @@ export class ServerConfigForm {
      * @returns The HTML for the webview
      */
     private _getHtmlForWebview(): string {
-        const defaultServer: ServerConfig = this._server || {
-            name: '',
-            description: '',
-            transportType: TransportType.STDIO,
-            stdioConfig: {
-                cmd: '',
-                args: [],
-                cwd: '',
-                environment: {},
-            },
-        }
-
         // Generate environment variables HTML
         let stdioEnvVars = ''
         let hasEnvVars = false
         if (
-            defaultServer.stdioConfig?.environment &&
-            typeof defaultServer.stdioConfig.environment === 'object' &&
-            Object.keys(defaultServer.stdioConfig.environment).length > 0
+            this._server.stdioConfig?.environment &&
+            typeof this._server.stdioConfig.environment === 'object' &&
+            Object.keys(this._server.stdioConfig.environment).length > 0
         ) {
             hasEnvVars = true
-            stdioEnvVars = Object.entries(defaultServer.stdioConfig.environment)
+            stdioEnvVars = Object.entries(this._server.stdioConfig.environment)
                 .map(
                     ([key, value]) => `
                     <tr>
@@ -317,11 +336,11 @@ export class ServerConfigForm {
         let sseHeaders = ''
         let hasHeaders = false
         if (
-            defaultServer.sseConfig?.headers &&
-            Object.keys(defaultServer.sseConfig.headers).length > 0
+            this._server.sseConfig?.headers &&
+            Object.keys(this._server.sseConfig.headers).length > 0
         ) {
             hasHeaders = true
-            sseHeaders = Object.entries(defaultServer.sseConfig.headers)
+            sseHeaders = Object.entries(this._server.sseConfig.headers)
                 .map(
                     ([key, value]) => `
                     <tr>
@@ -336,19 +355,19 @@ export class ServerConfigForm {
 
         // Prepare replacements for the template
         const replacements: Record<string, string> = {
-            title: this._isEditing ? `Edit Server: ${defaultServer.name}` : 'Add Server',
-            serverName: defaultServer.name,
-            serverDescription: defaultServer.description || '',
-            stdioChecked: defaultServer.transportType === TransportType.STDIO ? 'checked' : '',
-            sseChecked: defaultServer.transportType === TransportType.SSE ? 'checked' : '',
-            stdioHidden: defaultServer.transportType !== TransportType.STDIO ? 'hidden' : '',
-            sseHidden: defaultServer.transportType !== TransportType.SSE ? 'hidden' : '',
-            stdioCmd: defaultServer.stdioConfig?.cmd || '',
-            stdioArgs: defaultServer.stdioConfig?.args?.join(',') || '',
-            stdioCwd: defaultServer.stdioConfig?.cwd || '',
+            title: this._isEditing ? `Edit Server: ${this._server.name}` : 'Add Server',
+            serverName: this._server.name,
+            serverDescription: this._server.description || '',
+            stdioChecked: this._server.transportType === TransportType.STDIO ? 'checked' : '',
+            sseChecked: this._server.transportType === TransportType.SSE ? 'checked' : '',
+            stdioHidden: this._server.transportType !== TransportType.STDIO ? 'hidden' : '',
+            sseHidden: this._server.transportType !== TransportType.SSE ? 'hidden' : '',
+            stdioCmd: this._server.stdioConfig?.cmd || '',
+            stdioArgs: this._server.stdioConfig?.args?.join(',') || '',
+            stdioCwd: this._server.stdioConfig?.cwd || '',
             stdioEnvVars: stdioEnvVars,
             hasEnvVars: hasEnvVars ? 'true' : 'false',
-            sseUrl: defaultServer.sseConfig?.url || '',
+            sseUrl: this._server.sseConfig?.url || '',
             sseHeaders: sseHeaders,
             hasHeaders: hasHeaders ? 'true' : 'false',
             nameError: this._validationErrors.name
