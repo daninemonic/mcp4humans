@@ -22,14 +22,14 @@ export function mcpIsServerConnected(serverName: string): boolean {
 
 /**
  * Connect to an MCP server
- * @param server The server configuration
+ * @param config The server configuration
  * @returns A promise that resolves to an ApiResponse
  */
-export async function mcpConnect(server: ServerConfig): Promise<ApiResponse<void>> {
+export async function mcpConnect(config: ServerConfig): Promise<ApiResponse<void>> {
     try {
         // Create client identity
         const clientIdentity = {
-            name: `mcp4humans-vscode-client-for-${server.name}`,
+            name: `mcp4humans-vscode-client-for-${config.name}`,
             version: '1.0.0',
         }
 
@@ -65,8 +65,8 @@ export async function mcpConnect(server: ServerConfig): Promise<ApiResponse<void
 
         // Create transport based on configuration
         let transport
-        if (server.transportType === TransportType.STDIO) {
-            if (!server.stdioConfig) {
+        if (config.transportType === TransportType.STDIO) {
+            if (!config.stdioConfig) {
                 return {
                     success: false,
                     error: 'STDIO configuration is missing',
@@ -82,19 +82,19 @@ export async function mcpConnect(server: ServerConfig): Promise<ApiResponse<void
             }
 
             // Add user-specified environment variables
-            if (server.stdioConfig.environment) {
+            if (config.stdioConfig.environment) {
                 env = {
                     ...env,
-                    ...server.stdioConfig.environment,
+                    ...config.stdioConfig.environment,
                 }
             }
 
             // Create STDIO transport
 
             // Handle special cases for common commands
-            let command = server.stdioConfig.cmd
-            let args = [...(server.stdioConfig.args || [])]
-            let cwd = server.stdioConfig.cwd || undefined
+            let command = config.stdioConfig.cmd
+            let args = [...(config.stdioConfig.args || [])]
+            let cwd = config.stdioConfig.cwd || undefined
 
             // Special handling for uv command
             if (command === 'uv' && cwd) {
@@ -111,7 +111,7 @@ export async function mcpConnect(server: ServerConfig): Promise<ApiResponse<void
 
             console.log(
                 'Connecting to STDIO server:',
-                server.name,
+                config.name,
                 'command:',
                 command,
                 'args:',
@@ -127,37 +127,37 @@ export async function mcpConnect(server: ServerConfig): Promise<ApiResponse<void
                 env,
                 stderr: 'pipe', // Capture stderr for better error reporting
             })
-        } else if (server.transportType === TransportType.SSE) {
-            if (!server.sseConfig?.url) {
+        } else if (config.transportType === TransportType.SSE) {
+            if (!config.sseConfig?.url) {
                 return {
                     success: false,
                     error: 'SSE configuration must include a URL',
                 }
             }
 
-            console.log('Connecting to SSE server:', server.name, 'url:', server.sseConfig.url)
+            console.log('Connecting to SSE server:', config.name, 'url:', config.sseConfig.url)
 
             // Create SSE transport
-            const sseUrl = new URL(server.sseConfig.url)
+            const sseUrl = new URL(config.sseConfig.url)
 
             // Create SSE transport with appropriate options
             transport = new SSEClientTransport(sseUrl, {
                 // Add headers if provided
-                ...(server.sseConfig.headers && {
+                ...(config.sseConfig.headers && {
                     requestInit: {
-                        headers: server.sseConfig.headers,
+                        headers: config.sseConfig.headers,
                     },
                 }),
             })
         } else {
             return {
                 success: false,
-                error: `Unsupported transport type: ${server.transportType}`,
+                error: `Unsupported transport type: ${config.transportType}`,
             }
         }
 
         // Set up error handling for stderr if available (for STDIO transport)
-        if (server.transportType === TransportType.STDIO) {
+        if (config.transportType === TransportType.STDIO) {
             const stdioTransport = transport as StdioClientTransport
 
             // Start the transport to get access to stderr
@@ -167,7 +167,7 @@ export async function mcpConnect(server: ServerConfig): Promise<ApiResponse<void
             if (stdioTransport.stderr) {
                 stdioTransport.stderr.on('data', (data: Buffer) => {
                     const output = data.toString()
-                    console.log(`Server "${server.name}" stderr:`, output)
+                    console.log(`Server "${config.name}" stderr:`, output)
                 })
             }
 
@@ -177,10 +177,10 @@ export async function mcpConnect(server: ServerConfig): Promise<ApiResponse<void
 
         // Connect to the server
         await client.connect(transport, { timeout: 5000 })
-        console.log('Connected to MCP server:', server.name)
+        console.log('Connected to MCP server:', config.name)
 
         // Store the client for later use
-        activeClients[server.name] = client
+        activeClients[config.name] = client
 
         return {
             success: true,

@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { ServerConfig, ServerSchema, TransportType } from '../models/types'
 import { mcpConnect, mcpGetTools, mcpDisconnect } from '../services/mcpClient'
-import { jsonParserParseConfig } from '../services/jsonParser'
+import { jsonConfigParser } from '../services/jsonConfigParser'
 import { getWebviewContent } from '../utils/webviewUtils'
 import { vscServerTreeRefresh, vscServerViewDetail, vscStorageSaveServer } from '../commands'
 
@@ -22,7 +22,7 @@ export class ServerConfigForm {
     private readonly _panel: vscode.WebviewPanel
     private readonly _extensionUri: vscode.Uri
     private _disposables: vscode.Disposable[] = []
-    private _server: ServerConfig = {
+    private _config: ServerConfig = {
         name: '',
         description: '',
         transportType: TransportType.STDIO,
@@ -49,11 +49,11 @@ export class ServerConfigForm {
     /**
      * Create or show a server configuration form panel
      * @param extensionUri The URI of the extension
-     * @param server The server configuration (if editing)
+     * @param config The server configuration (if editing)
      */
-    public static createOrShow(extensionUri: vscode.Uri, server?: ServerConfig): ServerConfigForm {
-        const _isEditing = !!server
-        const serverConfig = server || {
+    public static createOrShow(extensionUri: vscode.Uri, config?: ServerConfig): ServerConfigForm {
+        const _isEditing = !!config
+        const serverConfig = config || {
             name: '',
             description: '',
             transportType: TransportType.STDIO,
@@ -74,7 +74,7 @@ export class ServerConfigForm {
 
         // If we already have a panel, show it
         if (ServerConfigForm.currentPanel) {
-            ServerConfigForm.currentPanel._server = serverConfig
+            ServerConfigForm.currentPanel._config = serverConfig
             ServerConfigForm.currentPanel._isEditing = _isEditing
             ServerConfigForm.currentPanel._panel.reveal(column)
             ServerConfigForm.currentPanel._update()
@@ -84,7 +84,7 @@ export class ServerConfigForm {
         // Otherwise, create a new panel
         const panel = vscode.window.createWebviewPanel(
             ServerConfigForm.viewType,
-            _isEditing ? `Edit Server: ${server.name}` : 'Add Server',
+            _isEditing ? `Edit Server: ${config.name}` : 'Add Server',
             column || vscode.ViewColumn.One,
             {
                 // Enable JavaScript in the webview
@@ -119,7 +119,7 @@ export class ServerConfigForm {
     ) {
         this._panel = panel
         this._extensionUri = extensionUri
-        this._server = server
+        this._config = server
         this._isEditing = isEditing
 
         // Set the webview's initial html content
@@ -146,7 +146,7 @@ export class ServerConfigForm {
                 switch (message.command) {
                     case 'connectAndSave':
                         // Replace server data with html form data
-                        this._server = message.server
+                        this._config = message.server
                         await this._handleConnectAndSave()
                         return
                     case 'parseJson':
@@ -193,7 +193,7 @@ export class ServerConfigForm {
         this._isTesting = true
         this._update()
 
-        const connectResponse = await mcpConnect(this._server)
+        const connectResponse = await mcpConnect(this._config)
         if (!connectResponse.success) {
             this._isTesting = false
             vscode.window.showErrorMessage(`Failed to connect to server: ${connectResponse.error}`)
@@ -202,7 +202,7 @@ export class ServerConfigForm {
         }
 
         // Test getting tools
-        const toolsResponse = await mcpGetTools(this._server.name)
+        const toolsResponse = await mcpGetTools(this._config.name)
         if (!toolsResponse.success || !toolsResponse.data) {
             this._isTesting = false
             vscode.window.showErrorMessage(
@@ -210,7 +210,7 @@ export class ServerConfigForm {
             )
 
             // Make sure it's disconnected
-            await mcpDisconnect(this._server.name)
+            await mcpDisconnect(this._config.name)
             this._update()
             return
         }
@@ -218,12 +218,12 @@ export class ServerConfigForm {
         this._isTesting = false
         const tools = toolsResponse.data
         const schema: ServerSchema = {
-            ...this._server,
+            ...this._config,
             tools,
         }
 
         // Save the server configuration
-        vscStorageSaveServer(schema, this._isEditing)
+        vscStorageSaveServer(schema, !this._isEditing)
 
         // Refresh the server list
         vscServerTreeRefresh()
@@ -241,11 +241,11 @@ export class ServerConfigForm {
      */
     private _handleParseJson(json: string): void {
         // Use the flexible JSON parser
-        const result = jsonParserParseConfig(json)
+        const result = jsonConfigParser(json)
 
         if (result.success && result.data) {
             // Update the server configuration
-            this._server = result.data
+            this._config = result.data
             this._validationErrors = {}
             this._update()
         } else {
@@ -262,32 +262,32 @@ export class ServerConfigForm {
     private _validateServer(): Record<string, string> {
         const errors: Record<string, string> = {}
 
-        if (!this._server.name) {
+        if (!this._config.name) {
             errors.name = 'Server name is required'
         }
 
-        if (!this._server.transportType) {
+        if (!this._config.transportType) {
             errors.transportType = 'Transport type is required'
         }
 
-        if (this._server.transportType === TransportType.STDIO) {
-            if (!this._server.stdioConfig) {
+        if (this._config.transportType === TransportType.STDIO) {
+            if (!this._config.stdioConfig) {
                 errors.stdioConfig = 'STDIO configuration is required'
-            } else if (!this._server.stdioConfig.cmd) {
+            } else if (!this._config.stdioConfig.cmd) {
                 errors['stdioConfig.cmd'] = 'Command is required'
             }
         }
 
-        if (this._server.transportType === TransportType.SSE) {
-            if (!this._server.sseConfig) {
+        if (this._config.transportType === TransportType.SSE) {
+            if (!this._config.sseConfig) {
                 errors.sseConfig = 'SSE configuration is required'
             } else {
-                if (!this._server.sseConfig.url) {
+                if (!this._config.sseConfig.url) {
                     errors['sseConfig.url'] = 'URL is required'
                 } else {
                     // Validate URL format
                     const urlRegex = /^(http|https):\/\/[a-zA-Z0-9.-]+:[0-9]+\/sse$/
-                    if (!urlRegex.test(this._server.sseConfig.url)) {
+                    if (!urlRegex.test(this._config.sseConfig.url)) {
                         errors['sseConfig.url'] =
                             'Invalid SSE URL format. Expected: http[s]://{host}:{port}/sse'
                     }
@@ -303,7 +303,7 @@ export class ServerConfigForm {
      */
     private _update(): void {
         this._panel.title =
-            this._isEditing && this._server ? `Edit Server: ${this._server.name}` : 'Add Server'
+            this._isEditing && this._config ? `Edit Server: ${this._config.name}` : 'Add Server'
         this._panel.webview.html = this._getHtmlForWebview()
     }
 
@@ -316,12 +316,12 @@ export class ServerConfigForm {
         let stdioEnvVars = ''
         let hasEnvVars = false
         if (
-            this._server.stdioConfig?.environment &&
-            typeof this._server.stdioConfig.environment === 'object' &&
-            Object.keys(this._server.stdioConfig.environment).length > 0
+            this._config.stdioConfig?.environment &&
+            typeof this._config.stdioConfig.environment === 'object' &&
+            Object.keys(this._config.stdioConfig.environment).length > 0
         ) {
             hasEnvVars = true
-            stdioEnvVars = Object.entries(this._server.stdioConfig.environment)
+            stdioEnvVars = Object.entries(this._config.stdioConfig.environment)
                 .map(
                     ([key, value]) => `
                     <tr>
@@ -338,11 +338,11 @@ export class ServerConfigForm {
         let sseHeaders = ''
         let hasHeaders = false
         if (
-            this._server.sseConfig?.headers &&
-            Object.keys(this._server.sseConfig.headers).length > 0
+            this._config.sseConfig?.headers &&
+            Object.keys(this._config.sseConfig.headers).length > 0
         ) {
             hasHeaders = true
-            sseHeaders = Object.entries(this._server.sseConfig.headers)
+            sseHeaders = Object.entries(this._config.sseConfig.headers)
                 .map(
                     ([key, value]) => `
                     <tr>
@@ -357,19 +357,19 @@ export class ServerConfigForm {
 
         // Prepare replacements for the template
         const replacements: Record<string, string> = {
-            title: this._isEditing ? `Edit Server: ${this._server.name}` : 'Add Server',
-            serverName: this._server.name,
-            serverDescription: this._server.description || '',
-            stdioChecked: this._server.transportType === TransportType.STDIO ? 'checked' : '',
-            sseChecked: this._server.transportType === TransportType.SSE ? 'checked' : '',
-            stdioHidden: this._server.transportType !== TransportType.STDIO ? 'hidden' : '',
-            sseHidden: this._server.transportType !== TransportType.SSE ? 'hidden' : '',
-            stdioCmd: this._server.stdioConfig?.cmd || '',
-            stdioArgs: this._server.stdioConfig?.args?.join(',') || '',
-            stdioCwd: this._server.stdioConfig?.cwd || '',
+            title: this._isEditing ? `Edit Server: ${this._config.name}` : 'Add Server',
+            serverName: this._config.name,
+            serverDescription: this._config.description || '',
+            stdioChecked: this._config.transportType === TransportType.STDIO ? 'checked' : '',
+            sseChecked: this._config.transportType === TransportType.SSE ? 'checked' : '',
+            stdioHidden: this._config.transportType !== TransportType.STDIO ? 'hidden' : '',
+            sseHidden: this._config.transportType !== TransportType.SSE ? 'hidden' : '',
+            stdioCmd: this._config.stdioConfig?.cmd || '',
+            stdioArgs: this._config.stdioConfig?.args?.join(',') || '',
+            stdioCwd: this._config.stdioConfig?.cwd || '',
             stdioEnvVars: stdioEnvVars,
             hasEnvVars: hasEnvVars ? 'true' : 'false',
-            sseUrl: this._server.sseConfig?.url || '',
+            sseUrl: this._config.sseConfig?.url || '',
             sseHeaders: sseHeaders,
             hasHeaders: hasHeaders ? 'true' : 'false',
             // Add a timestamp to force the webview to refresh even when content is identical

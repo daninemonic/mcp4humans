@@ -43,7 +43,7 @@ export async function storageGetServers(
  * @param schema The server schema to add
  * @returns A promise that resolves to an ApiResponse
  */
-export async function serverViewAdd(
+export async function storageServerAdd(
     context: vscode.ExtensionContext,
     schema: ServerSchema
 ): Promise<ApiResponse<void>> {

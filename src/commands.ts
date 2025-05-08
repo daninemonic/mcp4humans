@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { ServerExplorerProvider } from './views/serverExplorerProvider'
 import { ServerDetailWebview } from './webviews/serverDetailWebview'
 import { ServerConfigForm } from './webviews/serverConfigForm'
-import { serverViewAdd, storageUpdateServer, storageDeleteServer } from './services/storage'
+import { storageServerAdd, storageUpdateServer, storageDeleteServer } from './services/storage'
 import { ServerConfig, ServerSchema } from './models/types'
 import { mcpConnect, mcpDisconnect, mcpIsServerConnected, mcpGetTools } from './services/mcpClient'
 
@@ -138,6 +138,9 @@ export function registerCommands(
                             schema.tools = toolsResponse.data!
                             isConnected = true
 
+                            // Update the server schema in storage
+                            vscStorageSaveServer(schema, false)
+
                             // Refresh the server explorer to update the connection status
                             serverExplorerProvider.refresh()
                         }
@@ -194,20 +197,20 @@ export function registerCommands(
     // Register the save server command
     const StorageSaveServerCommand = vscode.commands.registerCommand(
         MCP4HumansCommand.StorageSaveServer,
-        async (schema: ServerSchema, isEditing) => {
+        async (schema: ServerSchema, isNew: boolean) => {
             let response
 
-            if (isEditing) {
-                response = await storageUpdateServer(context, schema)
+            if (isNew) {
+                response = await storageServerAdd(context, schema)
             } else {
-                response = await serverViewAdd(context, schema)
+                response = await storageUpdateServer(context, schema)
             }
 
             if (response.success) {
                 vscServerTreeRefresh()
             } else {
                 vscode.window.showErrorMessage(
-                    `Failed to ${isEditing ? 'update' : 'add'} server: ${response.error}`
+                    `Failed to ${isNew ? 'add' : 'update'} server: ${response.error}`
                 )
             }
         }
@@ -251,8 +254,8 @@ export const vscMCPDisconnect = (server: ServerConfig) => {
     vscode.commands.executeCommand(MCP4HumansCommand.MCPDisconnect, server)
 }
 
-export const vscStorageSaveServer = (schema: ServerSchema, isEditing: boolean) => {
-    vscode.commands.executeCommand(MCP4HumansCommand.StorageSaveServer, schema, isEditing)
+export const vscStorageSaveServer = (schema: ServerSchema, isNew: boolean) => {
+    vscode.commands.executeCommand(MCP4HumansCommand.StorageSaveServer, schema, isNew)
 }
 
 export const vscStorageDeleteServer = (serverName: string) => {

@@ -2,6 +2,12 @@
 
 All notable changes to the "MCP4Humans" extension will be documented in this file.
 
+## [1.0.3] - 2024-05-08
+
+### Added
+
+- Now supports multiple server views in parallel
+
 ## [1.0.2] - 2024-05-07
 
 ### Added
