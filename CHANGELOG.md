@@ -2,6 +2,12 @@
 
 All notable changes to the "MCP4Humans" extension will be documented in this file.
 
+## [1.0.5] - 2024-05-08
+
+### Added
+
+- Downgraded VSCode version compatibility to 1.96.2 to support latest Cursor
+
 ## [1.0.4] - 2024-05-08
 
 ### Added
