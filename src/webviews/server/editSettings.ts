@@ -4,11 +4,11 @@
  * This module provides a webview panel for adding and editing server configurations.
  */
 import * as vscode from 'vscode'
-import { ServerConfig, TransportType } from '../models/types'
-import { jsonConfigParser } from '../services/jsonConfigParser'
-import { getWebviewContent } from '../utils/webviewUtils'
-import { vscServerViewDetail } from '../models/commands'
-import { mcpConnectAndBuildSchema } from '../utils/mcpUtils'
+import { ServerConfig, TransportType } from '../../models/types'
+import { jsonConfigParser } from '../../services/jsonConfigParser'
+import { getWebviewContent } from '../../utils/webviewUtils'
+import { vscServerViewDetail } from '../../models/commands'
+import { mcpConnectAndBuildSchema } from '../../utils/mcpUtils'
 
 /**
  * Class that manages the server configuration form webview panel
@@ -358,7 +358,7 @@ export class ServerConfigForm {
         return getWebviewContent(
             this._panel.webview,
             this._extensionUri,
-            'src/webviews/templates/serverConfigForm.html',
+            'dist/webviews/html/editSettings.html',
             replacements
         )
     }

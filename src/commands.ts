@@ -5,8 +5,8 @@
  */
 import * as vscode from 'vscode'
 import { ServerExplorerProvider } from './views/serverExplorerProvider'
-import { ServerDetailWebview } from './webviews/serverDetailWebview'
-import { ServerConfigForm } from './webviews/serverConfigForm'
+import { ServerDetailWebview } from './webviews/server/serverView'
+import { ServerConfigForm } from './webviews/server/editSettings'
 import { storageServerAdd, storageUpdateServer, storageDeleteServer } from './services/storage'
 import { ServerConfig, ServerSchema } from './models/types'
 import { MCP4HumansCommand, vscServerTreeRefresh } from './models/commands'

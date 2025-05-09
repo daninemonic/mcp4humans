@@ -2,7 +2,7 @@
     "name": "mcp4humans",
     "displayName": "MCP4Humans",
     "description": "User-friendly client for Model Context Protocol (MCP) servers - connect, manage, and execute MCP tools directly in VS Code",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "publisher": "daninemonic",
     "author": {
         "name": "Model Context Protocol Team"
@@ -159,7 +159,8 @@
         "vsix:publish": "vsce publish"
     },
     "dependencies": {
-        "@modelcontextprotocol/sdk": "^1.11.0"
+        "@modelcontextprotocol/sdk": "^1.11.0",
+        "fs-extra": "^11.3.0"
     },
     "devDependencies": {
         "@types/mocha": "^10.0.10",

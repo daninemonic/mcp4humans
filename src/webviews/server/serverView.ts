@@ -4,17 +4,17 @@
  * This module provides a webview panel for displaying server details and tools.
  */
 import * as vscode from 'vscode'
-import { ServerSchema, ServerConfig, Tool, ToolParameterType } from '../models/types'
-import { mcpCallTool } from '../services/mcpClient'
-import { getWebviewContent } from '../utils/webviewUtils'
-import { LogService } from '../services/logService'
+import { ServerSchema, ServerConfig, Tool, ToolParameterType } from '../../models/types'
+import { mcpCallTool } from '../../services/mcpClient'
+import { getWebviewContent } from '../../utils/webviewUtils'
+import { LogService } from '../../services/logService'
 import {
     vscLogServerAdd,
     vscMCPConnect,
     vscMCPDisconnect,
     vscServerViewEdit,
     vscStorageDeleteServer,
-} from '../models/commands'
+} from '../../models/commands'
 
 /**
  * Tab types for the server detail view
@@ -410,7 +410,7 @@ export class ServerDetailWebview {
         return getWebviewContent(
             this._panel.webview,
             this._extensionUri,
-            'src/webviews/templates/serverDetailWebview.html',
+            'dist/webviews/html/serverView.html',
             replacements
         )
     }
