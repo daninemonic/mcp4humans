@@ -6,19 +6,9 @@
 import * as vscode from 'vscode'
 import { ServerConfig, TransportType } from '../../models/types'
 import { jsonConfigParser } from '../../services/jsonConfigParser'
-import { getWebviewContent } from '../../utils/webviewUtils'
+import { getWebviewContent, getNonce } from '../../utils/webviewUtils'
 import { vscServerViewDetail } from '../../models/commands'
 import { mcpConnectAndBuildSchema } from '../../utils/mcpUtils'
-
-// Function to generate a nonce
-function getNonce() {
-    let text = ''
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-    for (let i = 0; i < 32; i++) {
-        text += possible.charAt(Math.floor(Math.random() * possible.length))
-    }
-    return text
-}
 
 /**
  * Class that manages the server configuration form webview panel
@@ -103,7 +93,7 @@ export class ServerConfigForm {
                 localResourceRoots: [
                     vscode.Uri.joinPath(extensionUri, 'dist'), // For general resources in dist
                     vscode.Uri.joinPath(extensionUri, 'dist', 'webviews', 'css'),
-                    vscode.Uri.joinPath(extensionUri, 'dist', 'webviews', 'client'),
+                    vscode.Uri.joinPath(extensionUri, 'dist', 'webviews', 'js'),
                     vscode.Uri.joinPath(extensionUri, 'dist', 'webviews', 'html'),
                 ],
                 // Retain context when hidden

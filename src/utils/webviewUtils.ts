@@ -1,11 +1,22 @@
 /**
  * Webview utilities
- * 
+ *
  * This module provides utility functions for working with webviews.
  */
-import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs';
+import * as vscode from 'vscode'
+import * as fs from 'fs'
+
+/**
+ * Generates a nonce
+ */
+export function getNonce() {
+    let text = ''
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    for (let i = 0; i < 32; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length))
+    }
+    return text
+}
 
 /**
  * Get the HTML content for a webview
@@ -22,20 +33,20 @@ export function getWebviewContent(
     replacements: Record<string, string>
 ): string {
     // Get the local path to the template file
-    const templatePathOnDisk = vscode.Uri.joinPath(extensionUri, templatePath);
-    
+    const templatePathOnDisk = vscode.Uri.joinPath(extensionUri, templatePath)
+
     // Read the template file
-    let templateContent = fs.readFileSync(templatePathOnDisk.fsPath, 'utf8');
-    
+    let templateContent = fs.readFileSync(templatePathOnDisk.fsPath, 'utf8')
+
     // Replace all placeholders with their values
     for (const [placeholder, value] of Object.entries(replacements)) {
-        templateContent = templateContent.replace(new RegExp(`\\$\\{${placeholder}\\}`, 'g'), value);
+        templateContent = templateContent.replace(new RegExp(`\\$\\{${placeholder}\\}`, 'g'), value)
     }
-    
+
     // Replace all resource paths with webview URIs
-    templateContent = replaceResourcePaths(webview, extensionUri, templateContent);
-    
-    return templateContent;
+    templateContent = replaceResourcePaths(webview, extensionUri, templateContent)
+
+    return templateContent
 }
 
 /**
@@ -52,10 +63,10 @@ function replaceResourcePaths(
 ): string {
     // Replace all resource paths with webview URIs
     // Example: ${webview.resource:path/to/resource} -> vscode-webview-resource://...
-    const resourceRegex = /\$\{webview\.resource:(.*?)\}/g;
-    
+    const resourceRegex = /\$\{webview\.resource:(.*?)\}/g
+
     return content.replace(resourceRegex, (match, resourcePath) => {
-        const resourceUri = vscode.Uri.joinPath(extensionUri, resourcePath);
-        return webview.asWebviewUri(resourceUri).toString();
-    });
+        const resourceUri = vscode.Uri.joinPath(extensionUri, resourcePath)
+        return webview.asWebviewUri(resourceUri).toString()
+    })
 }

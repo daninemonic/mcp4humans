@@ -2,6 +2,16 @@
 
 All notable changes to the "MCP4Humans" extension will be documented in this file.
 
+## [1.0.7] - 2024-05-09
+
+### Added
+
+- Code reorganization
+
+### Fixed
+
+- Allow changing server name in edit settings
+
 ## [1.0.6] - 2024-05-08
 
 ### Added

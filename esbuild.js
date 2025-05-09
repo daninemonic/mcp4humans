@@ -57,7 +57,7 @@ async function buildWebviewClients() {
         outdir: 'dist/webviews/js',
         // Splitting can be useful if you have shared code between webview clients
         // splitting: true,
-        // outbase: 'src/webviews/ts-client', // Helps maintain folder structure in outdir
+        // outbase: 'src/webviews/js', // Helps maintain folder structure in outdir
         external: ['vscode'], // Though typically you don't use 'vscode' directly in client scripts
         logLevel: 'silent',
         plugins: [esbuildProblemMatcherPlugin], // Optional: use if you want problem matching for client scripts too
