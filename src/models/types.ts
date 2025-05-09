@@ -7,7 +7,7 @@
  */
 export enum TransportType {
     STDIO = 'stdio',
-    SSE = 'sse',
+    HTTP = 'http',
 }
 
 /**
@@ -36,16 +36,16 @@ export interface StdioConfig {
 }
 
 /**
- * Configuration for an MCP SSE server
+ * Configuration for an MCP HTTP server
  */
-export interface SSEConfig {
+export interface HTTPConfig {
     /**
-     * URL for the SSE server (format: http[s]://{host}:{port}/sse)
+     * URL for the server (format: http[s]://{host}:{port})
      */
     url: string
 
     /**
-     * Headers for the SSE connection
+     * Headers for the connection
      */
     headers?: Record<string, string>
 }
@@ -65,7 +65,7 @@ export interface ServerConfig {
     description?: string
 
     /**
-     * Transport type (stdio or sse)
+     * Transport type (stdio or http)
      */
     transportType: TransportType
 
@@ -76,10 +76,10 @@ export interface ServerConfig {
     stdioConfig?: StdioConfig
 
     /**
-     * Configuration for SSE transport
-     * Required if transportType is 'sse'
+     * Configuration for HTTP transport
+     * Required if transportType is 'http'
      */
-    sseConfig?: SSEConfig
+    httpConfig?: HTTPConfig
 }
 
 /**

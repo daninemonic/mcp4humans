@@ -2,6 +2,16 @@
 
 All notable changes to the "MCP4Humans" extension will be documented in this file.
 
+## [1.0.6] - 2024-05-08
+
+### Added
+
+- Support for StreamableHTTP. Backwards compatible with SSE
+
+### Fixed
+
+- Resending tool commands wasn't refreshing the result
+
 ## [1.0.5] - 2024-05-08
 
 ### Added

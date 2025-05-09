@@ -232,6 +232,7 @@ export class ServerDetailWebview {
         }
 
         try {
+            const start = Date.now()
             // Execute the tool
             const response = await mcpCallTool(this._schema.name, toolName, params)
 
@@ -244,6 +245,12 @@ export class ServerDetailWebview {
                     data: response.error,
                 })
                 return
+            }
+
+            // Ensure it takes at least 200ms to avoid the UI to glitch fast
+            const end = Date.now()
+            if (end - start < 200) {
+                await new Promise(resolve => setTimeout(resolve, 200 - (end - start)))
             }
 
             // Process the successful response
@@ -460,22 +467,22 @@ export class ServerDetailWebview {
                     }
                 `
             }
-        } else if (this._schema.transportType === 'sse') {
-            const sseConfig = this._schema.sseConfig
-            if (sseConfig) {
+        } else if (this._schema.transportType === 'http') {
+            const httpConfig = this._schema.httpConfig
+            if (httpConfig) {
                 transportRows = `
                     <tr>
                         <td class="property-name">URL</td>
-                        <td>${sseConfig.url}</td>
+                        <td>${httpConfig.url}</td>
                     </tr>
                     ${
-                        sseConfig.headers && Object.keys(sseConfig.headers).length > 0
+                        httpConfig.headers && Object.keys(httpConfig.headers).length > 0
                             ? `
                     <tr>
                         <td class="property-name">Headers</td>
                         <td>
                             <table class="nested-table">
-                                ${Object.entries(sseConfig.headers)
+                                ${Object.entries(httpConfig.headers)
                                     .map(
                                         ([key, value]) => `
                                 <tr>
@@ -707,7 +714,6 @@ export class ServerDetailWebview {
                     <div class="result-container hidden">
                         <div class="result-header">
                             <div class="result-status">
-                                <span class="result-status-icon"></span>
                                 <span class="result-status-text"></span>
                             </div>
                             <span class="result-toggle">▼</span>

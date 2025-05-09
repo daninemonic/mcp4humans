@@ -23,7 +23,7 @@ export function jsonConfigParser(jsonString: string): ApiResponse<ServerConfig> 
                 cmd: '',
                 args: [],
             },
-            sseConfig: {
+            httpConfig: {
                 url: '',
                 headers: {},
             },
@@ -31,7 +31,7 @@ export function jsonConfigParser(jsonString: string): ApiResponse<ServerConfig> 
 
         // Recursively search for configuration keys
         function processConfigData(data: Record<string, any>, parentKey?: string): void {
-            if (!serverConfig || !serverConfig.stdioConfig || !serverConfig.sseConfig) {
+            if (!serverConfig || !serverConfig.stdioConfig || !serverConfig.httpConfig) {
                 return
             }
             for (const [key, value] of Object.entries(data)) {
@@ -63,25 +63,25 @@ export function jsonConfigParser(jsonString: string): ApiResponse<ServerConfig> 
                     serverConfig.name = value
                 } else if (typeof value === 'string' && value.startsWith('http')) {
                     // value that starts with http should be url
-                    if (!serverConfig.sseConfig) {
-                        serverConfig.sseConfig = { url: value }
+                    if (!serverConfig.httpConfig) {
+                        serverConfig.httpConfig = { url: value }
                     } else {
-                        serverConfig.sseConfig.url = value
+                        serverConfig.httpConfig.url = value
                     }
-                    // switch to sse type
-                    serverConfig.transportType = TransportType.SSE
+                    // switch to http type
+                    serverConfig.transportType = TransportType.HTTP
                     // If name is not set, use parent as name
                     if (serverConfig.name === '' && parentKey) {
                         serverConfig.name = parentKey
                     }
-                } else if (value === TransportType.SSE || value === TransportType.STDIO) {
-                    // any key with sse or stdio is transport type
+                } else if (value === TransportType.HTTP || value === TransportType.STDIO) {
+                    // any key with http or stdio is transport type
                     serverConfig.transportType = value
                 } else if (key === 'headers') {
-                    if (!serverConfig.sseConfig) {
-                        serverConfig.sseConfig = { url: '', headers: value }
+                    if (!serverConfig.httpConfig) {
+                        serverConfig.httpConfig = { url: '', headers: value }
                     } else {
-                        serverConfig.sseConfig.headers = value
+                        serverConfig.httpConfig.headers = value
                     }
                 } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
                     // Recursively process nested objects
@@ -105,21 +105,21 @@ export function jsonConfigParser(jsonString: string): ApiResponse<ServerConfig> 
                 }
             }
 
-            // Validate SSE config
-            if (serverConfig.transportType === TransportType.SSE) {
-                if (!serverConfig.sseConfig?.url) {
+            // Validate HTTP config
+            if (serverConfig.transportType === TransportType.HTTP) {
+                if (!serverConfig.httpConfig?.url) {
                     return {
                         success: false,
-                        error: 'SSE configuration must include a "url" key',
+                        error: 'HTTP configuration must include a "url" key',
                     }
                 }
 
                 // Validate URL format
-                const urlRegex = /^(http|https):\/\/[a-zA-Z0-9.-]+:[0-9]+\/sse$/
-                if (!urlRegex.test(serverConfig.sseConfig.url)) {
+                const urlRegex = /^(http|https):\/\/[a-zA-Z0-9.-:]+\/(mcp|sse)$/
+                if (!urlRegex.test(serverConfig.httpConfig.url)) {
                     return {
                         success: false,
-                        error: 'Invalid SSE URL format. Expected: http[s]://{host}:{port}/sse',
+                        error: 'Invalid HTTP URL format. Expected: (http|https)://.../(mcp|sse)',
                     }
                 }
             }

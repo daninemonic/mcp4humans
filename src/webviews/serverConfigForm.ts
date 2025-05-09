@@ -32,7 +32,7 @@ export class ServerConfigForm {
             cwd: '',
             environment: {},
         },
-        sseConfig: {
+        httpConfig: {
             url: '',
             headers: {},
         },
@@ -62,7 +62,7 @@ export class ServerConfigForm {
                 cwd: '',
                 environment: {},
             },
-            sseConfig: {
+            httpConfig: {
                 url: '',
                 headers: {},
             },
@@ -244,18 +244,18 @@ export class ServerConfigForm {
             }
         }
 
-        if (this._config.transportType === TransportType.SSE) {
-            if (!this._config.sseConfig) {
-                errors.sseConfig = 'SSE configuration is required'
+        if (this._config.transportType === TransportType.HTTP) {
+            if (!this._config.httpConfig) {
+                errors.httpConfig = 'HTTP configuration is required'
             } else {
-                if (!this._config.sseConfig.url) {
-                    errors['sseConfig.url'] = 'URL is required'
+                if (!this._config.httpConfig.url) {
+                    errors['httpConfig.url'] = 'URL is required'
                 } else {
                     // Validate URL format
-                    const urlRegex = /^(http|https):\/\/[a-zA-Z0-9.-]+:[0-9]+\/sse$/
-                    if (!urlRegex.test(this._config.sseConfig.url)) {
-                        errors['sseConfig.url'] =
-                            'Invalid SSE URL format. Expected: http[s]://{host}:{port}/sse'
+                    const urlRegex = /^(http|https):\/\/[a-zA-Z0-9.-:]+\/(mcp|sse)$/
+                    if (!urlRegex.test(this._config.httpConfig.url)) {
+                        errors['httpConfig.url'] =
+                            'Invalid HTTP URL format. Expected: (http|https)://.../(mcp|sse)'
                     }
                 }
             }
@@ -301,14 +301,14 @@ export class ServerConfigForm {
         }
 
         // Generate headers HTML
-        let sseHeaders = ''
+        let httpHeaders = ''
         let hasHeaders = false
         if (
-            this._config.sseConfig?.headers &&
-            Object.keys(this._config.sseConfig.headers).length > 0
+            this._config.httpConfig?.headers &&
+            Object.keys(this._config.httpConfig.headers).length > 0
         ) {
             hasHeaders = true
-            sseHeaders = Object.entries(this._config.sseConfig.headers)
+            httpHeaders = Object.entries(this._config.httpConfig.headers)
                 .map(
                     ([key, value]) => `
                     <tr>
@@ -327,16 +327,16 @@ export class ServerConfigForm {
             serverName: this._config.name,
             serverDescription: this._config.description || '',
             stdioChecked: this._config.transportType === TransportType.STDIO ? 'checked' : '',
-            sseChecked: this._config.transportType === TransportType.SSE ? 'checked' : '',
+            httpChecked: this._config.transportType === TransportType.HTTP ? 'checked' : '',
             stdioHidden: this._config.transportType !== TransportType.STDIO ? 'hidden' : '',
-            sseHidden: this._config.transportType !== TransportType.SSE ? 'hidden' : '',
+            httpHidden: this._config.transportType !== TransportType.HTTP ? 'hidden' : '',
             stdioCmd: this._config.stdioConfig?.cmd || '',
             stdioArgs: this._config.stdioConfig?.args?.join(',') || '',
             stdioCwd: this._config.stdioConfig?.cwd || '',
             stdioEnvVars: stdioEnvVars,
             hasEnvVars: hasEnvVars ? 'true' : 'false',
-            sseUrl: this._config.sseConfig?.url || '',
-            sseHeaders: sseHeaders,
+            httpUrl: this._config.httpConfig?.url || '',
+            httpHeaders: httpHeaders,
             hasHeaders: hasHeaders ? 'true' : 'false',
             // Add a timestamp to force the webview to refresh even when content is identical
             timestamp: Date.now().toString(),
@@ -349,8 +349,8 @@ export class ServerConfigForm {
             stdioCmdError: this._validationErrors['stdioConfig.cmd']
                 ? `<div class="error">${this._validationErrors['stdioConfig.cmd']}</div>`
                 : '',
-            sseUrlError: this._validationErrors['sseConfig.url']
-                ? `<div class="error">${this._validationErrors['sseConfig.url']}</div>`
+            httpUrlError: this._validationErrors['httpConfig.url']
+                ? `<div class="error">${this._validationErrors['httpConfig.url']}</div>`
                 : '',
         }
 

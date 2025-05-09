@@ -19,7 +19,7 @@ The Model Context Protocol (MCP) is an open standard for AI tools and agents to 
 ### Easy Server Management
 
 - Add, edit, and delete MCP server configurations
-- Connect to both local (stdio) and remote (SSE) MCP servers
+- Connect to both local (stdio) and remote HTTP MCP servers (SSE or StreamableHTTP)
 - View server connection status at a glance
 
 ![Server Management Interface](images/server-management.png)
@@ -67,11 +67,11 @@ MCP4Humans supports local MCP servers that communicate via standard input/output
 - Working Directory: For local installations or development.
 - Environment Variables: Custom environment variables to pass to the server process.
 
-### Remote (SSE) Servers
+### Remote HTTP Servers
 
-MCP4Humans also supports remote MCP servers that communicate via Server-Sent Events (SSE). You can configure:
+MCP4Humans also supports remote MCP servers that communicate via Server-Sent Events (SSE) or Streamable HTTP. You can configure:
 
-- URL: The server endpoint (format: `http(s)://{host}:{port}/sse`)
+- URL: The server endpoint (format: `http(s)://{host}:{port}/sse` or `http(s)://{host}:{port}/mcp`)
 - Headers: Custom HTTP headers for authentication or other purposes
 
 ## Requirements

@@ -15,7 +15,7 @@ export class ServerTreeItem extends vscode.TreeItem {
      * Constructor
      * @param name The name of the server
      * @param description The description of the server
-     * @param transportType The transport type of the server (stdio or sse)
+     * @param transportType The transport type of the server (stdio or http)
      * @param isConnected Whether the server is connected
      * @param schema The server schema
      */

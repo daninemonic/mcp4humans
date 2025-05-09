@@ -227,6 +227,10 @@
             border-left: 4px solid var(--vscode-errorForeground);
         }
 
+        .result-header.failed {
+            border-left: 4px solid var(--vscode-notificationsWarningIcon-foreground);
+        }
+
         .result-status {
             display: flex;
             align-items: center;
@@ -244,6 +248,12 @@
             font-weight: bold;
             margin: 2px;
             color: var(--vscode-errorForeground);
+        }
+
+        .result-status-text.failed {
+            font-weight: bold;
+            margin: 2px;
+            color: var(--vscode-notificationsWarningIcon-foreground);
         }
 
         .result-toggle {
@@ -305,16 +315,6 @@
             margin: 10px 0;
             border-radius: 4px;
             display: block;
-        }
-
-        .result-header.failed {
-            border-left: 4px solid var(--vscode-notificationsWarningIcon-foreground);
-        }
-
-        .result-status-text.failed {
-            font-weight: bold;
-            margin: 2px;
-            color: var(--vscode-notificationsWarningIcon-foreground);
         }
 
         .loading-spinner {
@@ -794,11 +794,13 @@
 
                 const toolCard = document.getElementById(`tool-${toolName}`);
                 const resultContainer = toolCard.querySelector('.result-container');
+                const resultText = resultContainer.querySelector('.result-text');
 
                 sendButton.disabled = true;
                 loadingSpinner.classList.remove('hidden');
                 resultContainer.classList.add('hidden');
                 buttonText.textContent = 'Sending...';
+                resultText.textContent = '';
 
                 // Send message to execute tool
                 vscode.postMessage({
@@ -838,7 +840,15 @@
         window.addEventListener('message', (event) => {
             const message = event.data;
 
-            if (message.command === 'toolResult') {
+            if (message.command === 'logsUpdated') {
+                // If we're on the log tab, refresh the view
+                if (state.activeTab === 'log') {
+                    vscode.postMessage({
+                        command: 'refreshLogs'
+                    });
+                }
+            }
+            else if (message.command === 'toolResult') {
                 const toolName = message.toolName;
                 const resultType = message.resultType || 'success'; // success, error, or failed
                 const contentType = message.contentType || 'raw'; // raw, text, json, or image
@@ -847,23 +857,23 @@
 
                 // Find the tool card
                 const toolCard = document.getElementById(`tool-${toolName}`);
-                if (!toolCard) return;
 
-                // Reset the form
+                // Reset the form button state
                 const form = toolCard.querySelector('.tool-form');
-                const sendButton = form.querySelector('.send-button');
-                const loadingSpinner = form.querySelector('.loading-spinner');
-                const buttonText = form.querySelector('.button-text');
+                if (form) {
+                    const sendButton = form.querySelector('.send-button');
+                    const loadingSpinner = form.querySelector('.loading-spinner');
+                    const buttonText = form.querySelector('.button-text');
 
-                sendButton.disabled = false;
-                loadingSpinner.classList.add('hidden');
-                buttonText.textContent = 'Send';
+                    if (sendButton) sendButton.disabled = false;
+                    if (loadingSpinner) loadingSpinner.classList.add('hidden');
+                    if (buttonText) buttonText.textContent = 'Send';
+                }
 
-                // Update the result container
+
                 const resultContainer = toolCard.querySelector('.result-container');
                 const resultHeader = resultContainer.querySelector('.result-header');
-                const resultStatusIcon = resultContainer.querySelector('.result-status-icon');
-                const resultStatusText = resultContainer.querySelector('.result-status-text');
+                const resultStatusTextEl = resultContainer.querySelector('.result-status-text');
                 const resultContent = resultContainer.querySelector('.result-content');
                 const resultText = resultContainer.querySelector('.result-text');
 
@@ -871,29 +881,38 @@
                 resultContainer.classList.remove('hidden');
 
                 // Update the header based on result type
-                resultHeader.className = 'result-header ' + resultType;
+                resultHeader.className = 'result-header'; // Reset classes
+                resultHeader.classList.add(resultType); // Add current result type (e.g., 'success')
+
 
                 // Set status icon and text based on result type
-                let statusIcon = '✓';
-                let statusText = 'Success';
+                let statusTextContent = '✓ Success';
 
                 if (resultType === 'error') {
-                    statusIcon = '✗';
-                    statusText = 'Error';
+                    statusTextContent = '✗ Error';
                 } else if (resultType === 'failed') {
-                    statusIcon = '⚠';
-                    statusText = 'Failed';
+                    statusTextContent = '⚠ Failed';
                 }
 
-                resultStatusIcon.textContent = statusIcon;
-                resultStatusIcon.className = 'result-status-text ' + resultType;
-                resultStatusText.textContent = statusText;
-                resultStatusText.className = 'result-status-text ' + resultType;
+                if (resultStatusTextEl) {
+                    resultStatusTextEl.textContent = statusTextContent; // Set the text (e.g., Success)
 
-                // Clear previous content
+                    // Manage classes for the text element:
+                    // Remove previous result type classes. It retains its base 'result-status-text' class.
+                    resultStatusTextEl.classList.remove('success', 'error', 'failed');
+                    // Add the current result type as a class for styling (e.g., 'success').
+                    // The text element will now have classes like "result-status-text success".
+                    resultStatusTextEl.classList.add(resultType);
+                } else {
+                    console.warn('Element with class .result-status-text not found for tool:', toolName);
+                }
+
+
+                // Clear previous content in the main result area
                 resultText.textContent = '';
+                resultText.style.display = 'block'; // Ensure it's visible for text content
 
-                // Remove any existing images
+                // Remove any existing images from the result content area
                 const existingImage = resultContent.querySelector('.result-image');
                 if (existingImage) {
                     existingImage.remove();
@@ -901,33 +920,36 @@
 
                 // Handle different content types
                 if (contentType === 'image' && data) {
-                    // Create and display an image
                     const img = document.createElement('img');
                     img.src = `data:${mimeType};base64,${data}`;
                     img.className = 'result-image';
                     img.alt = 'Tool result image';
-
-                    // Replace the pre element with the image
-                    resultText.style.display = 'none';
-                    resultContent.appendChild(img);
+                    resultText.style.display = 'none'; // Hide the text area if showing an image
+                    resultContent.appendChild(img); // Append image to the content area
                 } else if (contentType === 'text') {
-                    // Display text with line breaks
-                    resultText.style.display = 'block';
                     resultText.textContent = data;
                 } else if (contentType === 'json' || contentType === 'raw') {
-                    // Format as JSON
-                    resultText.style.display = 'block';
-                    resultText.textContent = JSON.stringify(data, null, 2);
+                    try {
+                        resultText.textContent = JSON.stringify(data, null, 2);
+                    } catch (e) {
+                        resultText.textContent = "Error: Could not stringify JSON data.";
+                        console.error("Error stringifying JSON data:", e, data);
+                    }
                 } else {
-                    // Default fallback
-                    resultText.style.display = 'block';
+                    // Default fallback for unknown content types
                     resultText.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
                 }
 
-                // Close the result content
-                resultContent.classList.remove('open');
-                resultHeader.querySelector('.result-toggle').textContent = '▼';
-                resultHeader.querySelector('.result-toggle').classList.remove('open');
+                // Manage the collapsible result content section
+                // This example opens it by default when new result comes. Adjust as needed.
+                if (resultHeader && resultContent) {
+                    const resultToggle = resultHeader.querySelector('.result-toggle');
+                    resultContent.classList.add('open');
+                    if (resultToggle) {
+                        resultToggle.classList.add('open');
+                        resultToggle.textContent = '▲';
+                    }
+                }
             }
         });
     </script>
