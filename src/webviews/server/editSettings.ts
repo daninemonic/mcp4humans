@@ -10,6 +10,16 @@ import { getWebviewContent } from '../../utils/webviewUtils'
 import { vscServerViewDetail } from '../../models/commands'
 import { mcpConnectAndBuildSchema } from '../../utils/mcpUtils'
 
+// Function to generate a nonce
+function getNonce() {
+    let text = ''
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    for (let i = 0; i < 32; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length))
+    }
+    return text
+}
+
 /**
  * Class that manages the server configuration form webview panel
  */
@@ -37,6 +47,7 @@ export class ServerConfigForm {
             headers: {},
         },
     }
+    private _originalName: string // to keep name in case editing changes it
     private _isEditing: boolean = false
     private _validationErrors: Record<string, string> = {}
 
@@ -83,13 +94,18 @@ export class ServerConfigForm {
         // Otherwise, create a new panel
         const panel = vscode.window.createWebviewPanel(
             ServerConfigForm.viewType,
-            _isEditing ? `Edit Server: ${config.name}` : 'Add Server',
+            _isEditing && config ? `Edit Server: ${config.name}` : 'Add Server',
             column || vscode.ViewColumn.One,
             {
                 // Enable JavaScript in the webview
                 enableScripts: true,
                 // Restrict the webview to only load resources from the extension's directory
-                localResourceRoots: [extensionUri],
+                localResourceRoots: [
+                    vscode.Uri.joinPath(extensionUri, 'dist'), // For general resources in dist
+                    vscode.Uri.joinPath(extensionUri, 'dist', 'webviews', 'css'),
+                    vscode.Uri.joinPath(extensionUri, 'dist', 'webviews', 'client'),
+                    vscode.Uri.joinPath(extensionUri, 'dist', 'webviews', 'html'),
+                ],
                 // Retain context when hidden
                 retainContextWhenHidden: true,
             }
@@ -108,18 +124,19 @@ export class ServerConfigForm {
      * Constructor
      * @param panel The webview panel
      * @param extensionUri The URI of the extension
-     * @param server The server configuration (if editing)
+     * @param config The server configuration (if editing)
      */
     private constructor(
         panel: vscode.WebviewPanel,
         extensionUri: vscode.Uri,
-        server: ServerConfig,
+        config: ServerConfig,
         isEditing: boolean
     ) {
         this._panel = panel
         this._extensionUri = extensionUri
-        this._config = server
+        this._config = config
         this._isEditing = isEditing
+        this._originalName = config.name
 
         // Set the webview's initial html content
         this._update()
@@ -177,7 +194,6 @@ export class ServerConfigForm {
 
     /**
      * Handle connecting to and saving the server configuration
-     * @param server The server configuration to save
      */
     private async _handleConnectAndSave(): Promise<void> {
         // Validate the server configuration
@@ -189,8 +205,13 @@ export class ServerConfigForm {
         }
 
         // Connects to the server and handles all storage and UI updates
-        const schema = await mcpConnectAndBuildSchema(this._config, !this._isEditing)
+        const schema = await mcpConnectAndBuildSchema(
+            this._config,
+            !this._isEditing,
+            this._originalName
+        )
         if (schema) {
+            this._originalName = schema.name // update to name saved
             // Open detail window to show it's configured and connected
             vscServerViewDetail(schema)
 
@@ -278,7 +299,26 @@ export class ServerConfigForm {
      * @returns The HTML for the webview
      */
     private _getHtmlForWebview(): string {
-        // Generate environment variables HTML
+        const nonce = getNonce()
+
+        const cssDiskPath = vscode.Uri.joinPath(
+            this._extensionUri,
+            'dist',
+            'webviews',
+            'css',
+            'editSettings.css'
+        )
+        const jsDiskPath = vscode.Uri.joinPath(
+            this._extensionUri,
+            'dist',
+            'webviews',
+            'js',
+            'editSettings.js'
+        )
+
+        const cssUri = this._panel.webview.asWebviewUri(cssDiskPath)
+        const jsUri = this._panel.webview.asWebviewUri(jsDiskPath)
+
         let stdioEnvVars = ''
         let hasEnvVars = false
         if (
@@ -300,7 +340,6 @@ export class ServerConfigForm {
                 .join('')
         }
 
-        // Generate headers HTML
         let httpHeaders = ''
         let hasHeaders = false
         if (
@@ -321,9 +360,16 @@ export class ServerConfigForm {
                 .join('')
         }
 
-        // Prepare replacements for the template
         const replacements: Record<string, string> = {
-            title: this._isEditing ? `Edit Server: ${this._config.name}` : 'Add Server',
+            nonce: nonce,
+            cssUri: cssUri.toString(),
+            jsUri: jsUri.toString(),
+            'webview.cspSource': this._panel.webview.cspSource,
+
+            title:
+                this._isEditing && this._config
+                    ? `Edit Server: ${this._config.name}`
+                    : 'Add Server',
             serverName: this._config.name,
             serverDescription: this._config.description || '',
             stdioChecked: this._config.transportType === TransportType.STDIO ? 'checked' : '',
@@ -338,7 +384,6 @@ export class ServerConfigForm {
             httpUrl: this._config.httpConfig?.url || '',
             httpHeaders: httpHeaders,
             hasHeaders: hasHeaders ? 'true' : 'false',
-            // Add a timestamp to force the webview to refresh even when content is identical
             timestamp: Date.now().toString(),
             nameError: this._validationErrors.name
                 ? `<div class="error">${this._validationErrors.name}</div>`
@@ -354,11 +399,12 @@ export class ServerConfigForm {
                 : '',
         }
 
-        // Get the HTML content using the template
+        const htmlTemplatePath = 'dist/webviews/html/editSettings.html'
+
         return getWebviewContent(
             this._panel.webview,
             this._extensionUri,
-            'dist/webviews/html/editSettings.html',
+            htmlTemplatePath,
             replacements
         )
     }

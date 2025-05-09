@@ -14,7 +14,8 @@ import {
 
 export async function mcpConnectAndBuildSchema(
     server: ServerConfig,
-    isNew: boolean
+    isNew: boolean,
+    oldName?: string
 ): Promise<ServerSchema | undefined> {
     return vscode.window.withProgress(
         {
@@ -53,7 +54,7 @@ export async function mcpConnectAndBuildSchema(
             if (isNew) {
                 await vscStorageAddServer(schema)
             } else {
-                await vscStorageUpdateServer(schema)
+                await vscStorageUpdateServer(schema, oldName)
             }
 
             // Refresh the server explorer to update the connection status

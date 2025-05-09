@@ -66,6 +66,6 @@ export const vscStorageDeleteServer = async (serverName: string) => {
     await vscode.commands.executeCommand(MCP4HumansCommand.StorageDeleteServer, serverName)
 }
 
-export const vscStorageUpdateServer = async (schema: ServerSchema) => {
-    await vscode.commands.executeCommand(MCP4HumansCommand.StorageUpdateServer, schema)
+export const vscStorageUpdateServer = async (schema: ServerSchema, oldName?: string) => {
+    await vscode.commands.executeCommand(MCP4HumansCommand.StorageUpdateServer, schema, oldName)
 }

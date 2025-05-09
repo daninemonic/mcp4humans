@@ -168,8 +168,8 @@ export function registerCommands(
     // Register the update server command
     const StorageUpdateServerCommand = vscode.commands.registerCommand(
         MCP4HumansCommand.StorageUpdateServer,
-        async (schema: ServerSchema) => {
-            const response = await storageUpdateServer(context, schema)
+        async (schema: ServerSchema, oldName?: string) => {
+            const response = await storageUpdateServer(context, schema, oldName)
             if (response.success) {
                 vscServerTreeRefresh()
             } else {

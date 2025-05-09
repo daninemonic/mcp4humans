@@ -2,7 +2,11 @@
     "compilerOptions": {
         "module": "Node16",
         "target": "ES2022",
-        "lib": ["ES2022"],
+        "lib": [
+            "ES2022", // Or your target ES version
+            "DOM", // This is the important one for browser/webview environments
+            "DOM.Iterable" // Often useful too
+        ],
         "sourceMap": true,
         "rootDir": "src",
         "strict": true /* enable all strict type-checking options */
