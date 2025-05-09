@@ -22,11 +22,14 @@ interface HttpConfig {
     url: string
     headers: Record<string, string> | null
 }
-
+enum TransportType {
+    STDIO = 'stdio',
+    HTTP = 'http',
+}
 interface ServerConfig {
     name: string
     description: string
-    transportType: 'stdio' | 'http'
+    transportType: TransportType
     stdioConfig?: StdioConfig
     httpConfig?: HttpConfig
 }
@@ -56,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     transportRadios.forEach(radio => {
         radio.addEventListener('change', event => {
             const currentTarget = event.currentTarget as HTMLInputElement
-            if (currentTarget.value === 'stdio') {
+            if (currentTarget.value === TransportType.STDIO) {
                 stdioConfigSection?.classList.remove('hidden')
                 httpConfigSection?.classList.add('hidden')
             } else {
@@ -180,7 +183,7 @@ function getServerConfig(): ServerConfig {
     const description = (document.getElementById('server-description') as HTMLInputElement).value
     const transportType = (
         document.querySelector('input[name="transport-type"]:checked') as HTMLInputElement
-    ).value as 'stdio' | 'http'
+    ).value as TransportType
 
     const server: ServerConfig = {
         name,
@@ -188,7 +191,7 @@ function getServerConfig(): ServerConfig {
         transportType,
     }
 
-    if (transportType === 'stdio') {
+    if (transportType === TransportType.STDIO) {
         const cmd = (document.getElementById('stdio-cmd') as HTMLInputElement).value
         const argsStr = (document.getElementById('stdio-args') as HTMLInputElement).value
         const args = argsStr ? argsStr.split(',').map(arg => arg.trim()) : []
@@ -209,7 +212,7 @@ function getServerConfig(): ServerConfig {
             cwd: cwd || null,
             environment: Object.keys(environment).length > 0 ? environment : null,
         }
-    } else if (transportType === 'http') {
+    } else if (transportType === TransportType.HTTP) {
         const url = (document.getElementById('http-url') as HTMLInputElement).value
 
         const headers: Record<string, string> = {}

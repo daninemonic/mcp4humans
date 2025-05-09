@@ -11,6 +11,7 @@ All notable changes to the "MCP4Humans" extension will be documented in this fil
 ### Fixed
 
 - Allow changing server name in edit settings
+- Avoid overwriting servers with duplicated names
 
 ## [1.0.6] - 2024-05-08
 
