@@ -33,6 +33,12 @@ The Model Context Protocol (MCP) is an open standard for AI tools and agents to 
 
 ![Tool Execution Interface](images/tool-execution.png)
 
+### Debug Logs
+
+- Raw logs for main events in a tree view format for easy consumption
+
+![Debug Logs](images/logs.png)
+
 ### Seamless Integration
 
 - Access MCP servers directly from the VS Code sidebar

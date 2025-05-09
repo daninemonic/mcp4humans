@@ -402,17 +402,24 @@ export async function mcpCallTool(
             }
         }
 
-        console.log(`Executing tool ${toolName} on server ${serverName} with params:`, params)
-
-        // Call the tool with the parameters
-        const result = await client.callTool({
+        const callToolParams = {
             name: toolName,
             arguments: params,
-        })
+        }
 
         vscLogServerAdd(
             serverName,
-            `Tool ${toolName}`,
+            `Tool Request ${toolName}`,
+            JSON.stringify(callToolParams, null, 2)
+        )
+        console.log(`Executing tool ${toolName} on server ${serverName} with params:`, params)
+
+        // Call the tool with the parameters
+        const result = await client.callTool(callToolParams)
+
+        vscLogServerAdd(
+            serverName,
+            `Tool Response ${toolName}`,
             JSON.stringify(result, null, 2),
             result && !!result.isError
         )
