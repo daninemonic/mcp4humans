@@ -14,6 +14,33 @@ export enum StorageKeys {
 }
 
 /**
+ * Returns whether a server name already exists
+ * @param context The extension context
+ * @param serverName Name to verify
+ * @returns A promise that resolves to an ApiResponse containing the result
+ */
+export async function storageServerExists(
+    context: vscode.ExtensionContext,
+    serverName: string
+): Promise<ApiResponse<boolean>> {
+    try {
+        const servers = context.globalState.get<ServerSchema[]>(StorageKeys.SERVERS) || []
+
+        const exists = servers.some(s => s.name === serverName)
+
+        return {
+            success: true,
+            data: exists,
+        }
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+        }
+    }
+}
+
+/**
  * Get all servers from storage
  * @param context The extension context
  * @returns A promise that resolves to an ApiResponse containing the servers

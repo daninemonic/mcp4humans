@@ -7,8 +7,7 @@ import * as vscode from 'vscode'
 import { ServerConfig, TransportType } from '../../models/types'
 import { jsonConfigParser } from '../../services/jsonConfigParser'
 import { getWebviewContent, getNonce } from '../../utils/webviewUtils'
-import { vscServerViewDetail } from '../../models/commands'
-import { mcpConnectAndBuildSchema } from '../../utils/mcpUtils'
+import { MCPConnectType, vscMCPConnect } from '../../models/commands'
 
 /**
  * Class that manages the server configuration form webview panel
@@ -37,7 +36,6 @@ export class ServerConfigForm {
             headers: {},
         },
     }
-    private _originalName: string // to keep name in case editing changes it
     private _isEditing: boolean = false
     private _validationErrors: Record<string, string> = {}
 
@@ -126,7 +124,6 @@ export class ServerConfigForm {
         this._extensionUri = extensionUri
         this._config = config
         this._isEditing = isEditing
-        this._originalName = config.name
 
         // Set the webview's initial html content
         this._update()
@@ -152,8 +149,12 @@ export class ServerConfigForm {
                 switch (message.command) {
                     case 'connectAndSave':
                         // Replace server data with html form data
+                        let originalName = undefined
+                        if (this._isEditing && message.server.name !== this._config.name) {
+                            originalName = this._config.name
+                        }
                         this._config = message.server
-                        await this._handleConnectAndSave()
+                        await this._handleConnectAndSave(originalName)
                         return
                     case 'parseJson':
                         this._handleParseJson(message.json)
@@ -184,8 +185,9 @@ export class ServerConfigForm {
 
     /**
      * Handle connecting to and saving the server configuration
+     * @originalName    If name has been changed
      */
-    private async _handleConnectAndSave(): Promise<void> {
+    private async _handleConnectAndSave(originalName?: string): Promise<void> {
         // Validate the server configuration
         const validationErrors = this._validateServerConfig()
         if (Object.keys(validationErrors).length > 0) {
@@ -195,19 +197,23 @@ export class ServerConfigForm {
         }
 
         // Connects to the server and handles all storage and UI updates
-        const schema = await mcpConnectAndBuildSchema(
-            this._config,
-            !this._isEditing,
-            this._originalName
-        )
-        if (schema) {
-            this._originalName = schema.name // update to name saved
-            // Open detail window to show it's configured and connected
-            vscServerViewDetail(schema)
-
-            // Close the form
+        let connectType: MCPConnectType
+        if (!this._isEditing) {
+            connectType = MCPConnectType.NEW
+        } else if (originalName) {
+            connectType = MCPConnectType.UPDATED_NAME
+        } else {
+            connectType = MCPConnectType.UPDATED
+        }
+        const connectResponse = await vscMCPConnect(this._config, connectType, originalName)
+        if (connectResponse.success) {
+            // Close the edit form
             this._panel.dispose()
         } else {
+            if (originalName) {
+                // Restore original name
+                this._config.name = originalName
+            }
             this._update()
         }
     }

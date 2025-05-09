@@ -4,7 +4,7 @@
  * This module registers all the commands used by the extension.
  */
 import * as vscode from 'vscode'
-import { ServerConfig, ServerSchema } from './types'
+import { ApiResponse, ServerConfig, ServerSchema } from './types'
 
 // Enum to define mcp4humans commands list
 export enum MCP4HumansCommand {
@@ -35,8 +35,24 @@ export const vscLogServerAdd = (
     )
 }
 
-export const vscMCPConnect = async (server: ServerConfig) => {
-    await vscode.commands.executeCommand(MCP4HumansCommand.MCPConnect, server)
+export enum MCPConnectType {
+    EXISTING = 'existing', // Reconnect existing server
+    NEW = 'new', // Connect a new server
+    UPDATED = 'updated', // Connect a server that has been updated
+    UPDATED_NAME = 'name', // Connect a server that has changed name. Requires originalName
+}
+
+export const vscMCPConnect = async (
+    server: ServerConfig,
+    connectType: MCPConnectType,
+    originalName?: string
+): Promise<ApiResponse<ServerSchema>> => {
+    return await vscode.commands.executeCommand(
+        MCP4HumansCommand.MCPConnect,
+        server,
+        connectType,
+        originalName
+    )
 }
 
 export const vscMCPDisconnect = async (server: ServerConfig) => {

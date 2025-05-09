@@ -15,6 +15,7 @@ import { mcpCallTool } from '../../services/mcpClient'
 import { getWebviewContent, getNonce } from '../../utils/webviewUtils'
 import { LogService } from '../../services/logService'
 import {
+    MCPConnectType,
     vscMCPConnect,
     vscMCPDisconnect,
     vscServerViewEdit,
@@ -155,7 +156,7 @@ export class ServerDetailWebview {
             message => {
                 switch (message.command) {
                     case 'connect':
-                        vscMCPConnect(this._schema as ServerConfig)
+                        vscMCPConnect(this._schema as ServerConfig, MCPConnectType.EXISTING)
                         return
                     case 'disconnect':
                         vscMCPDisconnect(this._schema as ServerConfig)

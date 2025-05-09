@@ -7,11 +7,15 @@ import * as vscode from 'vscode'
 import { ServerExplorerProvider } from './views/serverExplorerProvider'
 import { ServerDetailWebview } from './webviews/server/serverView'
 import { ServerConfigForm } from './webviews/server/editSettings'
-import { storageServerAdd, storageUpdateServer, storageDeleteServer } from './services/storage'
-import { ServerConfig, ServerSchema } from './models/types'
-import { MCP4HumansCommand, vscServerTreeRefresh } from './models/commands'
-import { mcpDisconnect, mcpIsServerConnected } from './services/mcpClient'
-import { mcpConnectAndBuildSchema } from './utils/mcpUtils'
+import {
+    storageServerAdd,
+    storageUpdateServer,
+    storageDeleteServer,
+    storageServerExists,
+} from './services/storage'
+import { ServerConfig, ServerSchema, ApiResponse } from './models/types'
+import { MCP4HumansCommand, vscServerTreeRefresh, MCPConnectType } from './models/commands'
+import { mcpConnect, mcpDisconnect, mcpIsServerConnected, mcpGetTools } from './services/mcpClient'
 import { LogService } from './services/logService'
 
 /**
@@ -35,16 +39,67 @@ export function registerCommands(
     // Register the connect server command
     const MCPConnectCommand = vscode.commands.registerCommand(
         MCP4HumansCommand.MCPConnect,
-        async (server: ServerConfig) => {
-            if (!server) {
-                return
+        async (
+            config: ServerConfig,
+            connectType: MCPConnectType,
+            originalName?: string
+        ): Promise<ApiResponse<void>> => {
+            if (!config) {
+                return apiError('Invalid server config')
             }
-            const schema = await mcpConnectAndBuildSchema(server, false)
 
-            // Update the server detail webview if it exists
-            const serverPanel = ServerDetailWebview.getPanel(server.name)
-            if (serverPanel) {
-                serverPanel.update(schema || ({ ...server, tools: [] } as ServerSchema), !!schema)
+            const validateResponse = await validateMCPConnectInputs(
+                context,
+                connectType,
+                config.name,
+                originalName
+            )
+            if (!validateResponse.success) {
+                return apiError(validateResponse.error!)
+            }
+
+            // Connect to the server
+            const connectResponse = await mcpConnect(config)
+            if (!connectResponse.success) {
+                return apiError(`Failed to connect to ${config.name}: ${connectResponse.error}`)
+            }
+
+            // Get tools
+            const toolsResponse = await mcpGetTools(config.name)
+            if (!toolsResponse.success || !toolsResponse.data) {
+                // Ensure it's disconnected
+                await mcpDisconnect(config.name)
+                return apiError(`Failed to get tools from ${config.name}: ${toolsResponse.error}`)
+            }
+
+            vscode.window.showInformationMessage(`Connected to ${config.name}`)
+
+            // Build the server schema
+            const schema: ServerSchema = {
+                ...config,
+                tools: toolsResponse.data,
+            }
+
+            // Update storage. These functions can fail but we're just going to let it continue
+            // since we have already verified that there is no name overlap
+            if (connectType === MCPConnectType.NEW) {
+                await storageServerAdd(context, schema)
+            } else {
+                await storageUpdateServer(context, schema, originalName)
+            }
+
+            // Refresh the server explorer to update the connection status
+            serverExplorerProvider.refresh()
+
+            // Open detail window to show it's configured and connected
+            ServerDetailWebview.createOrShow(
+                context.extensionUri,
+                schema,
+                mcpIsServerConnected(schema.name)
+            )
+
+            return {
+                success: true,
             }
         }
     )
@@ -107,13 +162,13 @@ export function registerCommands(
     // Register the open server detail command
     const ServerViewDetailCommand = vscode.commands.registerCommand(
         MCP4HumansCommand.ServerViewDetail,
-        (server: ServerSchema) => {
-            if (server) {
+        (schema: ServerSchema) => {
+            if (schema) {
                 // Create or show the server detail webview
                 ServerDetailWebview.createOrShow(
                     context.extensionUri,
-                    server,
-                    mcpIsServerConnected(server.name)
+                    schema,
+                    mcpIsServerConnected(schema.name)
                 )
             }
         }
@@ -191,4 +246,74 @@ export function registerCommands(
         StorageUpdateServerCommand,
         StorageDeleteServerCommand
     )
+}
+
+/**
+ * Helper to print error and return
+ */
+function apiError(msg: string): ApiResponse<void> {
+    vscode.window.showErrorMessage(msg)
+    return {
+        success: false,
+        error: msg,
+    }
+}
+
+/**
+ * Helper to validate the inputs for MCPConnect before trying to connect
+ */
+const validateMCPConnectInputs = async (
+    context: vscode.ExtensionContext,
+    connectType: MCPConnectType,
+    serverName: string,
+    originalServerName?: string
+): Promise<ApiResponse<void>> => {
+    const existsResponse = await storageServerExists(context, serverName)
+    if (!existsResponse.success) {
+        return { success: false, error: existsResponse.error }
+    }
+    const nameExists = existsResponse.data as boolean
+
+    switch (connectType) {
+        case MCPConnectType.NEW:
+            if (nameExists) {
+                return {
+                    success: false,
+                    error: `Can't create server name ${serverName}. Already exists`,
+                }
+            }
+            break
+        case MCPConnectType.UPDATED:
+            if (!nameExists) {
+                return {
+                    success: false,
+                    error: `Can't update server name ${serverName}. Doesn't exist`,
+                }
+            }
+            break
+        case MCPConnectType.UPDATED_NAME:
+            if (nameExists) {
+                return {
+                    success: false,
+                    error: `Can't update server name ${serverName}. Already exists`,
+                }
+            }
+            if (!originalServerName) {
+                return {
+                    success: false,
+                    error: `Original server name required to change server name`,
+                }
+            }
+            break
+        case MCPConnectType.EXISTING:
+            if (!nameExists) {
+                return {
+                    success: false,
+                    error: `Unexpected error: ${serverName} doesn't exist`,
+                }
+            }
+            break
+    }
+
+    return { success: true }
 }
