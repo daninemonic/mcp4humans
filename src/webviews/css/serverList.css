@@ -1,0 +1,52 @@
+#server-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.server-button {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid var(--vscode-dropdown-border);
+    background-color: rgba(0, 0, 0, 0.1);
+    color: var(--vscode-foreground);
+    cursor: pointer;
+    text-align: left;
+    margin: 0px;
+}
+
+.server-button:hover {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+.server-button .status-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+}
+
+.server-button .server-name {
+    flex-grow: 1;
+    font-weight: bold;
+}
+
+.server-button .server-type {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+#add-server-button {
+    padding: 8px;
+    margin-top: 6px;
+    background-color: rgba(0, 0, 0, 0.1);
+    color: var(--vscode-foreground);
+    border: 1px solid var(--vscode-panel-border);
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+}
+
+#add-server-button:hover {
+    background-color: var(--vscode-button-hoverBackground);
+}

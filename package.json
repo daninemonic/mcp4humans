@@ -39,7 +39,9 @@
         "color": "#1e1e1e",
         "theme": "dark"
     },
-    "activationEvents": [],
+    "activationEvents": [
+        "onStartupFinished"
+    ],
     "main": "./dist/extension.js",
     "contributes": {
         "commands": [
@@ -91,8 +93,10 @@
         "views": {
             "mcp4humans-explorer": [
                 {
-                    "id": "mcp4humans.serverExplorer",
-                    "name": "MCP Servers"
+                    "icon": "resources/mcp4humans-icon.png",
+                    "id": "mcp4humans.serverList",
+                    "name": "MCP Servers",
+                    "type": "webview"
                 }
             ]
         },
@@ -100,33 +104,20 @@
             "view/title": [
                 {
                     "command": "mcp4humans.serverTreeRefresh",
-                    "when": "view == mcp4humans.serverExplorer",
+                    "when": "view == mcp4humans.serverList",
                     "group": "navigation"
                 },
                 {
                     "command": "mcp4humans.serverViewAdd",
-                    "when": "view == mcp4humans.serverExplorer",
+                    "when": "view == mcp4humans.serverList",
                     "group": "navigation"
                 }
             ],
             "view/item/context": [
                 {
                     "command": "mcp4humans.serverViewEdit",
-                    "when": "view == mcp4humans.serverExplorer && viewItem == server",
+                    "when": "view == mcp4humans.serverList && viewItem == server",
                     "group": "inline"
-                },
-                {
-                    "command": "mcp4humans.storageDeleteServer",
-                    "when": "view == mcp4humans.serverExplorer && viewItem == server",
-                    "group": "inline"
-                },
-                {
-                    "command": "mcp4humans.mcpConnect",
-                    "when": "view == mcp4humans.serverExplorer && viewItem == disconnected"
-                },
-                {
-                    "command": "mcp4humans.mcpDisconnect",
-                    "when": "view == mcp4humans.serverExplorer && viewItem == connected"
                 }
             ]
         },

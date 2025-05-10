@@ -140,17 +140,6 @@ export class ServerDetailWebview {
         // Listen for when the panel is disposed
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables)
 
-        // Update the content based on view changes
-        this._panel.onDidChangeViewState(
-            () => {
-                if (this._panel.visible) {
-                    this._update()
-                }
-            },
-            null,
-            this._disposables
-        )
-
         // Handle messages from the webview
         this._panel.webview.onDidReceiveMessage(
             message => {

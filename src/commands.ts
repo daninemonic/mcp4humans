@@ -4,28 +4,25 @@
  * This module registers all the commands used by the extension.
  */
 import * as vscode from 'vscode'
-import { ServerExplorerProvider } from './views/serverExplorerProvider'
+import { ServerListProvider } from './webviews/server/serverList'
 import { ServerDetailWebview } from './webviews/server/serverView'
 import { ServerConfigForm } from './webviews/server/editSettings'
-import {
-    storageServerAdd,
-    storageUpdateServer,
-    storageDeleteServer,
-    storageServerExists,
-} from './services/storage'
-import { ServerConfig, ServerSchema, ApiResponse } from './models/types'
-import { MCP4HumansCommand, vscServerTreeRefresh, MCPConnectType } from './models/commands'
+import { StorageService } from './services/storage'
+import { ServerConfig, ServerSchema, ApiResponse, ServerStatus } from './models/types'
+import { MCP4HumansCommand, MCPConnectType } from './models/commands'
 import { mcpConnect, mcpDisconnect, mcpIsServerConnected, mcpGetTools } from './services/mcpClient'
 import { LogService } from './services/logService'
 
 /**
  * Registers all commands for the extension
  * @param context The extension context
- * @param serverExplorerProvider The server explorer provider
+ * @param serverListProvider The server buttons webview provider
+ * @param storageService The storage service instance
  */
 export function registerCommands(
     context: vscode.ExtensionContext,
-    serverExplorerProvider: ServerExplorerProvider
+    serverListProvider: ServerListProvider,
+    storageService: StorageService // Accept StorageService instance
 ): void {
     // Register the log server command
     const LogServerAddCommand = vscode.commands.registerCommand(
@@ -49,7 +46,7 @@ export function registerCommands(
             }
 
             const validateResponse = await validateMCPConnectInputs(
-                context,
+                storageService,
                 connectType,
                 config.name,
                 originalName
@@ -77,19 +74,19 @@ export function registerCommands(
             // Build the server schema
             const schema: ServerSchema = {
                 ...config,
+                status: ServerStatus.CONNECTED,
                 tools: toolsResponse.data,
             }
 
-            // Update storage. These functions can fail but we're just going to let it continue
-            // since we have already verified that there is no name overlap
+            // Update storage
             if (connectType === MCPConnectType.NEW) {
-                await storageServerAdd(context, schema)
+                await storageService.addServer(schema)
             } else {
-                await storageUpdateServer(context, schema, originalName)
+                await storageService.updateServer(schema, originalName)
             }
 
-            // Refresh the server explorer to update the connection status
-            serverExplorerProvider.refresh()
+            // Refresh the server list in the webview
+            serverListProvider.updateServerList()
 
             // Open detail window to show it's configured and connected
             ServerDetailWebview.createOrShow(
@@ -132,11 +129,18 @@ export function registerCommands(
                     // Update the server detail webview if it's open
                     const serverPanel = ServerDetailWebview.getPanel(server.name)
                     if (serverPanel) {
-                        serverPanel.update({ ...server, tools: [] } as ServerSchema, false)
+                        serverPanel.update(
+                            {
+                                ...server,
+                                status: ServerStatus.DISCONNECTED,
+                                tools: [],
+                            } as ServerSchema,
+                            false
+                        )
                     }
 
-                    // Refresh the server explorer to update the connection status
-                    serverExplorerProvider.refresh()
+                    // Refresh the server list in the webview
+                    serverListProvider.updateServerList()
                 }
             )
         }
@@ -146,7 +150,7 @@ export function registerCommands(
     const ServerTreeRefreshCommand = vscode.commands.registerCommand(
         MCP4HumansCommand.ServerTreeRefresh,
         () => {
-            serverExplorerProvider.refresh()
+            serverListProvider.updateServerList()
         }
     )
 
@@ -189,9 +193,9 @@ export function registerCommands(
     const StorageAddServerCommand = vscode.commands.registerCommand(
         MCP4HumansCommand.StorageAddServer,
         async (schema: ServerSchema) => {
-            const response = await storageServerAdd(context, schema)
+            const response = await storageService.addServer(schema)
             if (response.success) {
-                vscServerTreeRefresh()
+                serverListProvider.updateServerList()
             } else {
                 vscode.window.showErrorMessage(`Failed to add server: ${response.error}`)
             }
@@ -210,10 +214,10 @@ export function registerCommands(
             await mcpDisconnect(serverName)
 
             // Delete the server
-            const response = await storageDeleteServer(context, serverName)
+            const response = await storageService.deleteServer(serverName)
 
             if (response.success) {
-                vscServerTreeRefresh()
+                serverListProvider.updateServerList()
             } else {
                 vscode.window.showErrorMessage(`Failed to delete server: ${response.error}`)
             }
@@ -224,9 +228,9 @@ export function registerCommands(
     const StorageUpdateServerCommand = vscode.commands.registerCommand(
         MCP4HumansCommand.StorageUpdateServer,
         async (schema: ServerSchema, oldName?: string) => {
-            const response = await storageUpdateServer(context, schema, oldName)
+            const response = await storageService.updateServer(schema, oldName)
             if (response.success) {
-                vscServerTreeRefresh()
+                serverListProvider.updateServerList()
             } else {
                 vscode.window.showErrorMessage(`Failed to update server: ${response.error}`)
             }
@@ -261,14 +265,15 @@ function apiError(msg: string): ApiResponse<void> {
 
 /**
  * Helper to validate the inputs for MCPConnect before trying to connect
+ * @param storageService The storage service instance
  */
 const validateMCPConnectInputs = async (
-    context: vscode.ExtensionContext,
+    storageService: StorageService,
     connectType: MCPConnectType,
     serverName: string,
     originalServerName?: string
 ): Promise<ApiResponse<void>> => {
-    const existsResponse = await storageServerExists(context, serverName)
+    const existsResponse = await storageService.serverExists(serverName)
     if (!existsResponse.success) {
         return { success: false, error: existsResponse.error }
     }

@@ -6,7 +6,8 @@ All notable changes to the "MCP4Humans" extension will be documented in this fil
 
 ### Added
 
-- Code reorganization
+- New server view
+- Replaced images
 
 ### Fixed
 

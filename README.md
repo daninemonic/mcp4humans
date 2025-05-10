@@ -22,7 +22,7 @@ The Model Context Protocol (MCP) is an open standard for AI tools and agents to 
 - Connect to both local (stdio) and remote HTTP MCP servers (SSE or StreamableHTTP)
 - View server connection status at a glance
 
-![Server Management Interface](images/server-management.png)
+![Server Management Interface](images/add_server.png)
 
 ### Tool Execution
 
@@ -30,28 +30,23 @@ The Model Context Protocol (MCP) is an open standard for AI tools and agents to 
 - Execute tools with a simple form interface
 - View tool execution results in a collapsible panel
 - Work with multiple servers in parallel
+- View raw logs for main events in a tree view format for easy consumption
 
-![Tool Execution Interface](images/tool-execution.png)
-
-### Debug Logs
-
-- Raw logs for main events in a tree view format for easy consumption
-
-![Debug Logs](images/logs.png)
+![Tool Execution Interface](images/multiple_servers.png)
 
 ### Seamless Integration
 
 - Access MCP servers directly from the VS Code sidebar
 - Persistent storage of server configurations
-- Intuitive UI that follows VS Code design patterns
+- Intuitive UI
 
 ## Getting Started
 
 1. Install the MCP4Humans extension from the VS Code Marketplace
 2. Click the MCP4Humans icon in the activity bar to open the MCP Servers view
-3. Click the "+" button to add a new MCP server
+3. Click "+ Add Server" to add a new MCP server
 4. Fill in the server details:
-   - You may start by pasting the usual JSON Claude configuration in the JSON box and letting it populate part of the form for you.
+   - You may start by pasting the usual JSON configurations in the JSON box and letting it populate part of the form for you.
    - Fill in the rest as needed.
 5. Click "Connect" to test and save the server configuration
 6. Click on a server in the list to view and execute available tools
@@ -76,7 +71,7 @@ MCP4Humans also supports remote MCP servers that communicate via Server-Sent Eve
 
 ## Requirements
 
-- VS Code 1.99.0 or higher
+- VS Code 1.96.3 or higher (Compatible with latest Cursor and VSCode)
 - An MCP-compatible server to connect to
 
 ## Feedback and Contributions

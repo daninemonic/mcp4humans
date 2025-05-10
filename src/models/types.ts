@@ -11,6 +11,15 @@ export enum TransportType {
 }
 
 /**
+ * Server status
+ */
+export enum ServerStatus {
+    CONNECTED = 'connected',
+    DISCONNECTED = 'disconnected',
+    CONNECTING = 'connecting',
+}
+
+/**
  * Configuration for an MCP STDIO server
  */
 export interface StdioConfig {
@@ -156,9 +165,9 @@ export interface Tool {
  * Schema for an MCP server
  */
 export interface ServerSchema extends ServerConfig {
-    /**
-     * List of tools provided by the server
-     */
+    // Server status
+    status?: ServerStatus
+    // List of tools provided by the server
     tools: Tool[]
 }
 
